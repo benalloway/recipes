@@ -1,0 +1,58 @@
+name: opencode-triage
+
+# Adversarial spec review, independent of the implement agent.
+# Label an issue `triage-requested` and an agent verdicts it against the
+# `ready-for-agent` bar (see CONTRIBUTING.md):
+# - PASS → it applies `ready-for-agent` itself, cascading into implement.
+# - FAIL → gaps list posted, back to `needs-triage`, nothing else fires.
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  triage:
+    if: |
+      github.event.label.name == 'triage-requested' &&
+      !github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    concurrency:
+      group: triage-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: opencode/muse-spark-1.3-contributor-free
+          variant: max
+          use_github_token: true
+          prompt: |
+            Triage GitHub issue #${{ github.event.issue.number }} for
+            implementation-readiness. Read AGENTS.md, the triage bar in
+            CONTRIBUTING.md, and .github/ISSUE_TEMPLATE/agent-task.md first.
+
+            You are the judge, not the worker. Be adversarial: find EVERY reason
+            this spec is not ready — ambiguity, missing or untestable acceptance
+            criteria, hidden assumptions or hidden context, scope spanning more
+            than one branch/PR, irreversible steps or prod secrets not flagged in
+            Human gates, missing milestone. A vague spec wastes far more than
+            this review costs; when in doubt, FAIL it.
+
+            Verdict:
+            - PASS (every bar item holds): post a brief PASS summary as an issue
+              comment, remove `triage-requested`, add `ready-for-agent`, stop.
+              That label starts implementation automatically.
+            - FAIL: post the gaps as a numbered, actionable list. Replace
+              `triage-requested` with `needs-triage` and stop.
+
+            Do NOT implement anything. No branches, no PRs, no code changes.
+            Never push to `main`. Never merge. Never read or echo secrets.

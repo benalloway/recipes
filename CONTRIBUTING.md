@@ -3,8 +3,9 @@
 This repo is built by agents, directed by humans. The whole flow:
 
 ```
-idea → plan session → issue (needs-triage) → triage → ready-for-agent
-  → agent implements → PR → auto review → auto address (≤2 rounds)
+idea → plan session → issue (needs-triage) → triage-requested
+  → agent verdicts spec → ready-for-agent → agent implements
+  → PR → auto review → auto address (≤2 rounds)
   → you merge → auto deploy → verify live
 ```
 
@@ -16,9 +17,10 @@ New issues land in `needs-triage` — automation ignores them there.
 
 ## Triage: the `ready-for-agent` bar
 
-Moving an issue to `ready-for-agent` means **"go build this unattended."**
-The label is the trigger — the implement workflow fires immediately.
-Promote only when ALL hold:
+`ready-for-agent` means **"go build this unattended"** — the implement
+workflow fires immediately. Don't apply it by hand on a guess. Instead,
+label the issue `triage-requested`: an independent triage agent verdicts
+the spec against this bar (adversarial — it hunts ambiguity, not excuses):
 
 - [ ] Goal is one outcome; Tasks are executable with no hidden context
 - [ ] Acceptance is verifiable (commands where possible)
@@ -26,8 +28,9 @@ Promote only when ALL hold:
 - [ ] Single scope (one branch → one PR); milestone set
 - [ ] No open questions; nothing irreversible; no prod secrets required
 
-If an autonomous run sends an issue back to `needs-triage`, the spec
-failed the bar — fix the spec, not the agent.
+**Pass** → the triage agent applies `ready-for-agent` itself and
+implementation starts. **Fail** → you get a numbered gaps list and the
+issue returns to `needs-triage`: fix the spec, re-request triage.
 
 ## Watch the pipeline
 

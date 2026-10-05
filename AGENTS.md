@@ -88,8 +88,11 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 
 ## Autonomous pipeline (no human in the loop)
 
-Labeling an issue `ready-for-agent` hands it to automation end to end:
+Labeling an issue `triage-requested` starts automation end to end:
 
+0. `opencode-triage` adversarially reviews the spec against the
+   `ready-for-agent` bar (CONTRIBUTING.md). PASS → it applies
+   `ready-for-agent` itself; FAIL → gaps list, back to `needs-triage`.
 1. `opencode-implement` picks up the issue, works the Workflow above, opens the PR.
 2. `opencode-review` auto-reviews the PR on open and on every push (ready PRs only).
 3. `opencode-address-review` fires on the bot's review comment: implements what
