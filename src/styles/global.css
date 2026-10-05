@@ -1,0 +1,33 @@
+:root {
+  --bg: #fbfbf9;
+  --surface: #ffffff;
+  --hairline: #e3e3e0;
+  --ink: #1a1a1a;
+  --muted: #8a8a86;
+  --accent: #9a8c7c;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.8;
+}
