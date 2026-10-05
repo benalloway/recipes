@@ -4,8 +4,10 @@
 # Product labels (mvp/post-mvp/area tags) are per-repo — manage those by hand.
 set -euo pipefail
 
+EXISTING_LABELS=$(gh label list --json name --jq '.[].name')
+
 label() { # $1=name $2=color $3=description
-  if gh label list --json name --jq '.[].name' | grep -qx "$1"; then
+  if echo "$EXISTING_LABELS" | grep -qx "$1"; then
     gh label edit "$1" --color "$2" --description "$3"
   else
     gh label create "$1" --color "$2" --description "$3"
