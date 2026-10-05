@@ -121,7 +121,7 @@ Labeling an issue `triage-requested` starts automation end to end:
 
 0. `opencode-triage` adversarially reviews the spec against the
    `ready-for-agent` bar (CONTRIBUTING.md). FAIL → gaps list, back to
-   `needs-triage` (also clears `agent:blocked`: rework moots the hold). PASS → it
+   `needs-triage` (also clears holds: rework moots the hold). PASS → it
    applies `ready-for-agent` + `agent:implement`, then runs the frontier check:
    native blocked-by edges, open `Blocked by` refs, same-file overlap between
    the spec's `Touches` list and files changed by open PRs / in-flight issues,

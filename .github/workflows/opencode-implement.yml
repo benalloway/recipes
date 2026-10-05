@@ -91,10 +91,11 @@ jobs:
             exit 0
           fi
 
-          # Unblock events need a standing trigger; a bare `agent:blocked`
-          # removal on an untriggered issue must not start work.
+          # Unblock events need a standing trigger; a bare hold removal
+          # (`agent:blocked` or legacy `blocked`) on an untriggered issue must
+          # not start work.
           if [ "${{ github.event.action }}" = "unlabeled" ] && ! has agent:implement; then
-            refuse "Not running: \`agent:blocked\` was removed but the issue is not \`agent:implement\`. Re-request triage first."
+            refuse "Not running: a hold was removed but the issue is not \`agent:implement\`. Re-request triage first."
             exit 0
           fi
 
@@ -147,8 +148,17 @@ jobs:
             refuse "Not running: no parseable \`Touches\` paths found. Add backticked repo-relative paths (no spaces) per .github/ISSUE_TEMPLATE/agent-task.md, then remove \`agent:blocked\` to retry."
             exit 0
           fi
-          for pr in $(gh pr list --state open --limit 100 --json number --jq '.[].number' || true); do
-            FILES=$(gh pr view "$pr" --json files --jq '.files[].path' || true)
+          for pr in $(gh pr list --state open --limit 100 --json number --jq '.[].number' || echo "__API_FAIL__"); do
+            if [ "$pr" = "__API_FAIL__" ]; then
+              gh issue edit "$ISSUE_NUMBER" --add-label "agent:blocked" || true
+              refuse "Not running: could not list open PRs (API failure) — refusing closed rather than risk same-file double-implement. Applied \`agent:blocked\`; remove it to retry."
+              exit 0
+            fi
+            FILES=$(gh pr view "$pr" --json files --jq '.files[].path' || echo "__API_FAIL__")
+            if [ "$FILES" = "__API_FAIL__" ]; then
+              echo "could not read files for PR #$pr — skipping it with notice" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
             HIT=$(comm -12 <(echo "$TOUCHES" | sort -u) <(echo "$FILES" | sort -u) || true)
             if [ -n "$HIT" ]; then
               gh issue edit "$ISSUE_NUMBER" --add-label "agent:blocked" || true

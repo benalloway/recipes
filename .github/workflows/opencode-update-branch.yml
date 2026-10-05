@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -38,12 +39,12 @@ jobs:
           case "$BRANCH" in
             -*|"") echo "refusing: suspicious branch name"; exit 1;;
           esac
-          git fetch origin main:main || git fetch origin main
+          git fetch origin main || exit 1
           git fetch origin -- "$BRANCH" || true
           git checkout -B -- "$BRANCH" "$HEAD_SHA"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git rebase main; then
+          if git rebase origin/main; then
             git push --force-with-lease="refs/heads/$BRANCH:$HEAD_SHA" origin -- "$BRANCH"
             gh pr edit "$PR_NUMBER" --remove-label "agent:update-branch" || true
             gh pr comment "$PR_NUMBER" --body "Rebased onto latest \`main\` cleanly."
