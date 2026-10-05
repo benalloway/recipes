@@ -1,23 +1,28 @@
 name: opencode-implement
 
-# Autonomous handoff: label an issue `ready-for-agent` and an agent picks it up,
-# implements it on a feature branch, verifies, and opens a PR.
-# That PR then flows into opencode-review.yml (auto review) and
-# opencode-address-review.yml (auto address). See AGENTS.md "Autonomous pipeline".
+# Autonomous handoff: `ready-for-agent` (spec approval) and `blocked` (hold)
+# are orthogonal labels. Implement fires on `ready-for-agent` AND on `blocked`
+# removal, but a deterministic bash preflight refuses before any agent runs
+# while the hold or any frontier conflict stands. That PR then flows into
+# opencode-review.yml (auto review) and opencode-address-review.yml
+# (auto address). See AGENTS.md "Autonomous pipeline".
 
 on:
   issues:
-    types: [labeled]
+    types: [labeled, unlabeled]
 
 jobs:
   implement:
     if: |
-      github.event.label.name == 'ready-for-agent' &&
-      !github.event.issue.pull_request
+      !github.event.issue.pull_request && (
+        (github.event.action == 'labeled' && github.event.label.name == 'ready-for-agent') ||
+        (github.event.action == 'unlabeled' && github.event.label.name == 'blocked')
+      )
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     concurrency:
       group: implement-${{ github.event.issue.number }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
@@ -29,7 +34,78 @@ jobs:
           # which need auth on private repos.
           fetch-depth: 0
 
+      - name: Preflight blocked-gate
+        id: preflight
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          DATA=$(gh issue view "$ISSUE_NUMBER" --json body,labels)
+          LABELS=$(echo "$DATA" | jq -r '.labels[].name')
+          BODY=$(echo "$DATA" | jq -r '.body // ""')
+          has() { echo "$LABELS" | grep -qx "$1"; }
+          refuse() {
+            echo "refused=true" >> "$GITHUB_OUTPUT"
+            printf 'Preflight refusal: %s\n' "$1" >> "$GITHUB_STEP_SUMMARY"
+            gh issue comment "$ISSUE_NUMBER" --body "$1"
+          }
+
+          # 0. Explicit hold or external gate.
+          if has blocked || has blocked-external; then
+            refuse "Not running: \`blocked\` / \`blocked-external\` is present. Remove \`blocked\` once the hold clears to re-fire this check (only proceeds with \`ready-for-agent\` still applied)."
+            exit 0
+          fi
+
+          # Unblock events need a standing approval; a bare `blocked` removal
+          # on an untriaged issue must not start work.
+          if [ "${{ github.event.action }}" = "unlabeled" ] && ! has ready-for-agent; then
+            refuse "Not running: \`blocked\` was removed but the issue is not \`ready-for-agent\`. Re-request triage first."
+            exit 0
+          fi
+
+          # 1. Open `Blocked by` refs (parsed from the issue's `## Blocked by`
+          # section only, so prose mentions like "needs #13" don't false-fire).
+          BLOCKERS=$(echo "$BODY" | awk '/^## Blocked by/{f=1;next}/^## /{f=0}f' | grep -o '#[0-9][0-9]*' | tr -d '#' | sort -u || true)
+          OPEN_REFS=""
+          for ref in $BLOCKERS; do
+            state=$(gh issue view "$ref" --json state --jq '.state' 2>/dev/null || echo "OPEN")
+            if [ "$state" = "OPEN" ]; then OPEN_REFS="$OPEN_REFS #$ref"; fi
+          done
+          if [ -n "$OPEN_REFS" ]; then
+            gh issue edit "$ISSUE_NUMBER" --add-label "blocked" || true
+            refuse "Not running: still blocked by open refs:$OPEN_REFS. Applied \`blocked\`; remove it (after they close) to re-fire."
+            exit 0
+          fi
+
+          # 2. An open PR already closing this issue (duplicate-run guard).
+          EXISTING=$(gh pr list --state open --json number,body --jq "[.[] | select(.body | test(\"(?i)(closes|fixes|resolves)\\\\s+#$ISSUE_NUMBER\\\\b\")) | .number] | join(\" \")")
+          if [ -n "$EXISTING" ]; then
+            refuse "Not running: open PR(s) ($EXISTING) already target this issue. Close them first, or work there instead of re-labeling."
+            exit 0
+          fi
+
+          # 3. Same-file overlap between the spec's `Touches` list and open PRs.
+          TOUCHES=$(echo "$BODY" | awk '/^## Touches/{f=1;next}/^## /{f=0}f' | grep -o '`[^`]*`' | tr -d '`' | grep -E '/|\.(ts|astro|css|sql|yml|md|jsonc?)$' | sort -u || true)
+          if [ -n "$TOUCHES" ]; then
+            for pr in $(gh pr list --state open --json number --jq '.[].number'); do
+              FILES=$(gh pr view "$pr" --json files --jq '.files[].path')
+              HIT=$(comm -12 <(echo "$TOUCHES" | sort -u) <(echo "$FILES" | sort -u) || true)
+              if [ -n "$HIT" ]; then
+                gh issue edit "$ISSUE_NUMBER" --add-label "blocked" || true
+                refuse "Not running: \`Touches\` overlap with open PR #$pr: $(echo "$HIT" | tr '\n' ' '). Applied \`blocked\`; remove it after #$pr merges (rebase onto main first)."
+                exit 0
+              fi
+            done
+          fi
+
+          # Frontier clear: mark in-flight, drop any stale hold.
+          gh issue edit "$ISSUE_NUMBER" --add-label "in-progress" || true
+          gh issue edit "$ISSUE_NUMBER" --remove-label "blocked" || true
+          echo "refused=false" >> "$GITHUB_OUTPUT"
+
       - uses: anomalyco/opencode/github@latest
+        if: steps.preflight.outputs.refused != 'true'
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,13 +118,16 @@ jobs:
             Follow AGENTS.md exactly — stack invariants, design system, commands,
             and the Workflow lifecycle (branch → work → verify → push → PR).
             The Workflow section's step 7 ("you NEVER merge") applies to you too.
+            The bash preflight already cleared the frontier (`Blocked by` refs,
+            duplicate PRs, file overlap); implement now, do not re-litigate it.
 
             0. Spec gate first: the issue must have a clear Goal, executable
                Tasks, and verifiable Acceptance (see
                .github/ISSUE_TEMPLATE/agent-task.md). If any are missing or
                ambiguous: do NOT implement. Post a comment listing exactly what
                is missing, replace the `ready-for-agent` label with
-               `needs-triage`, and stop.
+               `needs-triage`, remove `in-progress` and `blocked` if present,
+               and stop.
 
             Done means ALL of these are true:
             - If a branch/PR already exists for this issue, continue it — do not
@@ -60,10 +139,23 @@ jobs:
               `Closes #N`, What/Why, Verification output, Human gates,
               labels `ai-drafted-feedback` + the issue's milestone.
             - `CHANGES.md` entry included if production behavior changes.
+            - When the PR is open, remove `in-progress` and `ready-for-agent`
+              from the issue (the PR is now the in-flight marker; this also
+              unblocks same-file followers at merge time, not before).
 
             If you are blocked (needs a human: secrets, dashboard/DNS action,
             ambiguous spec, or anything matching `blocked-external`): do NOT open
-            a PR. Post your findings as an issue comment, add the
-            `ready-for-human` label, and stop.
+            a PR. Post your findings as an issue comment, add the `blocked` label
+            (keep `ready-for-agent`: approval stands, execution waits), remove
+            `in-progress`, and stop.
 
             Never push to `main`. Never merge. Never read or echo secrets.
+
+      - name: Report workflow failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue edit "${{ github.event.issue.number }}" --add-label "blocked" || true
+          gh issue comment "${{ github.event.issue.number }}" --body "Implement run failed before opening a PR ([logs]($RUN_URL)). Applied \`blocked\` so nothing half-started fires again. Remove it (with \`ready-for-agent\` still applied) to retry."

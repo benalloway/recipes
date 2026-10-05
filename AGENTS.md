@@ -91,9 +91,20 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 Labeling an issue `triage-requested` starts automation end to end:
 
 0. `opencode-triage` adversarially reviews the spec against the
-   `ready-for-agent` bar (CONTRIBUTING.md). PASS → it applies
-   `ready-for-agent` itself; FAIL → gaps list, back to `needs-triage`.
-1. `opencode-implement` picks up the issue, works the Workflow above, opens the PR.
+   `ready-for-agent` bar (CONTRIBUTING.md). FAIL → gaps list, back to
+   `needs-triage` (also clears `blocked`: rework moots the hold). PASS → it
+   applies `ready-for-agent`, then runs the frontier check: open `Blocked by`
+   refs, same-file overlap between the spec's `Touches` list and files changed
+   by open PRs / in-flight issues, external gates. Anything waiting → it also
+   applies `blocked` with the reason in a comment. Approval
+   (`ready-for-agent`) and hold (`blocked`) are orthogonal — never one
+   instead of the other.
+1. `opencode-implement` fires on `ready-for-agent` and on `blocked` removal.
+   Its bash preflight refuses while `blocked` is present, while any `Blocked
+   by` ref is still open, while an open PR already closes the issue, or while
+   `Touches` overlap an open PR (refusal = comment + ensure `blocked`, stop).
+   On start it adds `in-progress`; when its PR opens it removes `in-progress`
+   (the PR becomes the in-flight marker).
 2. `opencode-review` auto-reviews the PR on open and on every push (ready PRs only).
 3. `opencode-address-review` fires on the bot's review comment: implements what
    it agrees with, replies `Flagging for human: <reason>` in-thread on what it
@@ -117,6 +128,18 @@ Each round costs ~2 agent sessions (review + address) plus the implement run.
 - Deploys require an authenticated wrangler/cf session owned by the human.
   Agents must never handle, read, or echo raw API tokens; never read
   `~/.config/cloudflare/` or `.dev.vars`.
+
+## Agent skills
+
+Project skills live in `.agents/skills/` (Pocock set, pinned in
+`skills-lock.json`; update with `npx skills update`). Before plan/spec work,
+read `docs/agents/domain.md` (vocabulary + doc map),
+`docs/agents/issue-tracker.md` (tracker rules: publish as `needs-triage`,
+never `ready-for-agent` directly), and `docs/agents/triage-labels.md`
+(label vocabulary incl. `blocked`). Useful skills: `to-tickets` (vertical
+slices with `Blocked by` edges), `grill-with-docs` (plan sessions), `triage`
+(spec review input — the workflows' triage verdict still rules),
+`improve-codebase-architecture` (deep-module audits).
 
 ## Misc
 

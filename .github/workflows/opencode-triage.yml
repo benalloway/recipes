@@ -3,8 +3,10 @@ name: opencode-triage
 # Adversarial spec review, independent of the implement agent.
 # Label an issue `triage-requested` and an agent verdicts it against the
 # `ready-for-agent` bar (see CONTRIBUTING.md):
-# - PASS → it applies `ready-for-agent` itself, cascading into implement.
-# - FAIL → gaps list posted, back to `needs-triage`, nothing else fires.
+# - PASS → applies `ready-for-agent`, then runs the frontier check
+#   (open `Blocked by` refs, `Touches` overlap with open PRs / in-flight
+#   issues, external gates). Anything waiting → also applies `blocked`.
+# - FAIL → gaps list posted, back to `needs-triage` (clears `blocked`).
 
 on:
   issues:
@@ -16,6 +18,7 @@ jobs:
       github.event.label.name == 'triage-requested' &&
       !github.event.issue.pull_request
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
       group: triage-${{ github.event.issue.number }}
       cancel-in-progress: true
@@ -38,21 +41,42 @@ jobs:
           prompt: |
             Triage GitHub issue #${{ github.event.issue.number }} for
             implementation-readiness. Read AGENTS.md, the triage bar in
-            CONTRIBUTING.md, and .github/ISSUE_TEMPLATE/agent-task.md first.
+            CONTRIBUTING.md, docs/agents/triage-labels.md, and
+            .github/ISSUE_TEMPLATE/agent-task.md first.
 
             You are the judge, not the worker. Be adversarial: find EVERY reason
             this spec is not ready — ambiguity, missing or untestable acceptance
             criteria, hidden assumptions or hidden context, scope spanning more
             than one branch/PR, irreversible steps or prod secrets not flagged in
-            Human gates, missing milestone. A vague spec wastes far more than
-            this review costs; when in doubt, FAIL it.
+            Human gates, missing milestone, missing `Blocked by` / `Touches`
+            sections. A vague spec wastes far more than this review costs; when
+            in doubt, FAIL it.
 
             Verdict:
             - PASS (every bar item holds): post a brief PASS summary as an issue
-              comment, remove `triage-requested`, add `ready-for-agent`, stop.
-              That label starts implementation automatically.
+              comment, remove `triage-requested`, add `ready-for-agent`. Then
+              run the frontier check and report its outcome in the same comment:
+              (a) any open issue referenced in `Blocked by`?
+              (b) does the `Touches` list overlap files changed by any open PR
+                  (`gh pr list --state open`, then `gh pr view <N> --json files`)
+                  or by any other `ready-for-agent` / `in-progress` issue's
+                  `Touches`? (c) any external gate still pending (`blocked-external`,
+                  unresolved Human gates)? If anything is waiting, ALSO add the
+              `blocked` label with the specific reason (issue ref, file list, or
+              gate). Approval and hold are orthogonal — never one instead of
+              the other. Either way, stop: that label state starts (or correctly
+              holds) implementation automatically.
             - FAIL: post the gaps as a numbered, actionable list. Replace
-              `triage-requested` with `needs-triage` and stop.
+              `triage-requested` with `needs-triage`, remove `blocked` if
+              present (rework moots the hold), and stop.
 
             Do NOT implement anything. No branches, no PRs, no code changes.
             Never push to `main`. Never merge. Never read or echo secrets.
+
+      - name: Report workflow failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --body "Triage run failed before a verdict ([logs]($RUN_URL)). No labels changed. Re-add \`triage-requested\` to retry once the failure is understood."
