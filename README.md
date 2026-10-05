@@ -40,3 +40,15 @@ Production always has the secret set, so real sends never take this path.
 All Cloudflare glue lives in `src/lib/runtime.ts` + `src/lib/adapters/*`
 (db / blobs / mail) and `src/env.d.ts`. Porting to any other host means
 reimplementing those files only — nothing else imports platform modules.
+
+## Process (how work gets done here)
+
+- **Humans:** [CONTRIBUTING.md](./CONTRIBUTING.md) — idea → issue
+  (`needs-triage`) → `triage-requested` → agent builds → you merge → auto-deploy.
+- **Agents:** [AGENTS.md](./AGENTS.md) — stack invariants, commands, the
+  issue→PR workflow, and the autonomous pipeline (triage → implement → review
+  → address, with the `blocked` hold). Workflow trigger map:
+  [.github/workflows/README.md](./.github/workflows/README.md). Skill/vocabulary
+  config: [`docs/agents/`](./docs/agents/).
+- **Replicate this setup** in a new repo: [docs/bootstrap.md](./docs/bootstrap.md)
+  + [`scripts/setup-labels.sh`](./scripts/setup-labels.sh).
