@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Plan / architecture discussion
+    url: https://github.com/benalloway/recipes/blob/main/PLAN.md
+    about: Read PLAN.md; for architecture changes comment on the relevant issue or propose a PR to PLAN.md.

@@ -1,7 +1,7 @@
 {
   "name": "recipes",
   "version": "1.0.0",
-  "description": "Insanely lightweight recipe app — Astro 7 + Cloudflare Workers/D1/R2",
+  "description": "Insanely lightweight recipe app \u2014 Astro 7 + Cloudflare Workers/D1/R2",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -9,8 +9,6 @@
     "deploy": "npm run build && wrangler deploy -c dist/server/wrangler.json --domain recipes.benalloway.com",
     "db:migrate:local": "wrangler d1 migrations apply recipes-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply recipes-db --remote",
-    "db:seed:local": "node scripts/seed.mjs --local",
-    "db:seed:remote": "node scripts/seed.mjs --remote",
     "check": "astro sync && tsc --noEmit"
   },
   "repository": {
