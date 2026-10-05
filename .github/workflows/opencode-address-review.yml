@@ -4,7 +4,7 @@ name: opencode-address-review
 # comment on an autonomous PR, an agent reads every review thread, implements
 # what it agrees with, and flags disagreements for a human.
 # Loop guards (see AGENTS.md "Autonomous pipeline"):
-# - Only runs on PRs labeled `ai-drafted-feedback` without `ready-for-human`.
+# - Only runs on PRs labeled `agent:review` without `ready-for-human`.
 # - Ignores the action's own `[Working...]` placeholder and its own summaries.
 # - Iteration budget (2 rounds) + `ready-for-human` label stop the loop.
 
@@ -17,7 +17,7 @@ jobs:
     if: |
       github.event.issue.pull_request &&
       github.event.comment.user.type == 'Bot' &&
-      contains(github.event.issue.labels.*.name, 'ai-drafted-feedback') &&
+      contains(github.event.issue.labels.*.name, 'agent:review') &&
       !contains(github.event.issue.labels.*.name, 'ready-for-human') &&
       !contains(github.event.comment.body, '[Working...]') &&
       !contains(github.event.comment.body, 'auto-address-summary')
@@ -65,7 +65,7 @@ jobs:
           use_github_token: true
           prompt: |
             A review bot just posted on autonomous PR #${{ github.event.issue.number }}
-            (label `ai-drafted-feedback`). Your job: read the review, implement
+            (label `agent:review`). Your job: read the review, implement
             what is best, flag the rest for a human. Follow AGENTS.md invariants.
 
             0. First, check you should act at all:

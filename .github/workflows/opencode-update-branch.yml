@@ -1,0 +1,52 @@
+name: opencode-update-branch
+
+# Stale PR branches: rebase onto latest main to preserve linear history
+# (merges into branches are forbidden). Label a PR `agent:update-branch`;
+# success removes the label, conflict applies `agent:blocked` for a human.
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+jobs:
+  update-branch:
+    if: github.event.label.name == 'agent:update-branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: update-branch-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Rebase onto main
+        id: rebase
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main:main || git fetch origin main
+          git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git rebase main; then
+            git push --force-with-lease="refs/heads/$BRANCH:$HEAD_SHA" origin "$BRANCH"
+            gh pr edit "$PR_NUMBER" --remove-label "agent:update-branch" || true
+            gh pr comment "$PR_NUMBER" --body "Rebased onto latest \`main\` cleanly."
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            git rebase --abort
+            gh pr edit "$PR_NUMBER" --remove-label "agent:update-branch" || true
+            gh pr edit "$PR_NUMBER" --add-label "agent:blocked" || true
+            gh pr comment "$PR_NUMBER" --body "Rebase onto \`main\` conflicted — left the branch untouched. Rebase locally, force-push, then remove \`agent:blocked\`."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
