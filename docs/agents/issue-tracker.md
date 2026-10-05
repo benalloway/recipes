@@ -29,7 +29,13 @@ PLAN.md is the source of truth; milestones are never redefined without the owner
   `npm run check` + `npm run build`, open a PR per `.github/PULL_REQUEST_TEMPLATE.md`
   with `Closes #N`, add the `CHANGES.md` entry when production behavior changes,
   never merge. The skill's "commit to the current branch" and standalone
-  `/tdd`+`/code-review` closeout are subordinate to that lifecycle.
+  `/tdd`+`/code-review` closeout are subordinate to that lifecycle. Likewise
+  `implement-spec`'s integration branch, per-ticket worktrees, and merger
+  subagents are forbidden here: one ticket = one `feat/*` / `fix/*` branch =
+  one PR; linear history via rebase, never merges into the branch.
+- Wizards instantiated from the `wizard` skill must set `ENV_FILE=.dev.vars`
+  (repo convention, gitignored) — never the template default `.env`, which is
+  not ignored here and could persist secrets to a committable file.
 
 ## `Blocked by` section (required on every ticket)
 

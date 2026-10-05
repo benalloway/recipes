@@ -168,7 +168,7 @@ never `ready-for-agent` directly), and `docs/agents/triage-labels.md`
 slices with `Blocked by` edges), `grill-with-docs` (plan sessions), `triage`
 (spec review input — the workflows' triage verdict still rules),
 `improve-codebase-architecture` (deep-module audits), `wayfinder` (multi-session
-decision maps; see map #25), `diagnosing-bugs` (hard-bug loop), `code-review`
+decision maps), `diagnosing-bugs` (hard-bug loop), `code-review`
 (local pre-push self-review), `retro` (post-session env feedback).
 
 ## Misc
