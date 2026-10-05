@@ -5,7 +5,7 @@ OpenCode skills + free-tier Cloudflare architecture, all portable. Follow
 these steps; the per-repo checklist at the end is the only bespoke part.
 
 What you get: label-gated agent pipeline (triage → implement → review →
-address, with the orthogonal `blocked` hold), Pocock skills wired to repo
+address, with the orthogonal `agent:blocked` hold), Pocock skills wired to repo
 conventions, Astro SSR + D1/R2 behind a portability boundary, CI with
 strict-green `build` on `main` and auto-deploy on merge.
 
@@ -20,12 +20,12 @@ strict-green `build` on `main` and auto-deploy on merge.
 
 | Copy | Role |
 | ---- | ---- |
-| `.github/workflows/` (all 6) | CI + agent pipeline (triage/implement/review/address/on-demand) |
-| `.github/ISSUE_TEMPLATE/agent-task.md` | Spec format with `Blocked by` + `Touches` (parsed by automation — keep headings exact) |
+| `.github/workflows/` (all 7) | CI + agent pipeline (triage/implement/review/address/update-branch/on-demand) |
+| `.github/ISSUE_TEMPLATE/` (all) | Spec format (`agent-task.md`: Goal/Tasks/Acceptance/Human gates with `Blocked by` + `Touches`, headings parsed by automation — keep exact) + wayfinder map/ticket templates |
 | `.github/PULL_REQUEST_TEMPLATE.md` | PR format (`Closes #N`, Verification, Human gates) |
 | `AGENTS.md`, `CONTRIBUTING.md` | Agent protocol + human flow (adapt the stack section per repo) |
 | `docs/agents/` | Skill config: tracker rules, label table, domain map (rewrite `domain.md` per repo) |
-| `skills-lock.json` + `npx skills update` | Pinned Pocock skill subset; or reinstall: `npx skills@latest add mattpocock/skills -s "setup-matt-pocock-skills to-tickets triage improve-codebase-architecture grill-with-docs" -y` (installs to `.agents/skills/`) |
+| `skills-lock.json` + `npx skills update` | Pinned Pocock skill catalog (full set); or reinstall: `npx skills@latest add mattpocock/skills -s "<space-separated names>" -y` (installs to `.agents/skills/`). Keep vendored files byte-pristine; repo overrides live in `docs/agents/issue-tracker.md` |
 | `scripts/setup-labels.sh` | Idempotent label vocabulary (run it) |
 | `src/lib/runtime.ts`, `src/lib/adapters/*`, `src/env.d.ts` | Portability boundary pattern (adapt bindings per app) |
 | `wrangler.jsonc` | Bindings + routes + `platformProxy` dev (adapt names/ids) |
@@ -72,6 +72,6 @@ Email (if needed): Resend free tier (3k/mo) + SPF/DKIM in Cloudflare DNS +
 ## 6. Operating
 
 Publish tickets as `needs-triage` (never `ready-for-agent` directly) with
-`Blocked by` edges; label `triage-requested` to start the pipeline; remove
-`blocked` to resume held work. Budget ~4 agent sessions per issue. Kill
-switches: add `ready-for-human`, remove `ai-drafted-feedback`, or close.
+`Blocked by` edges (native blocked-by edges preferred); label `triage-requested` to start the pipeline; remove
+`agent:blocked` to resume held work. Budget ~4 agent sessions per issue. Kill
+switches: add `ready-for-human`, remove `agent:review`, or close.

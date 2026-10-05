@@ -3,10 +3,12 @@ name: opencode-triage
 # Adversarial spec review, independent of the implement agent.
 # Label an issue `triage-requested` and an agent verdicts it against the
 # `ready-for-agent` bar (see CONTRIBUTING.md):
-# - PASS → applies `ready-for-agent`, then runs the frontier check
-#   (open `Blocked by` refs, `Touches` overlap with open PRs / in-flight
-#   issues, external gates). Anything waiting → also applies `blocked`.
-# - FAIL → gaps list posted, back to `needs-triage` (clears `blocked`).
+# - PASS → applies `ready-for-agent` + `agent:implement`, then runs the
+#   frontier check (native blocked-by edges, `Blocked by` text, `Touches`
+#   overlap with open PRs / in-flight issues, external gates). Anything
+#   waiting → also applies `agent:blocked`.
+# - FAIL → gaps list posted, back to `needs-triage` (clears `agent:blocked`
+#   and legacy `blocked`).
 
 on:
   issues:
@@ -41,8 +43,16 @@ jobs:
           prompt: |
             Triage GitHub issue #${{ github.event.issue.number }} for
             implementation-readiness. Read AGENTS.md, the triage bar in
-            CONTRIBUTING.md, docs/agents/triage-labels.md, and
+            CONTRIBUTING.md, docs/agents/issue-tracker.md (tracker rules bind
+            every skill default — required reading, not optional),
+            docs/agents/triage-labels.md, and
             .github/ISSUE_TEMPLATE/agent-task.md first.
+
+            Refuse planning artifacts first: if the issue carries any
+            `wayfinder:*` label, remove `triage-requested`, comment that
+            wayfinder maps/tickets are never triaged (decisions resolve via
+            tracker comments; buildable outcomes graduate to `needs-triage`
+            build tickets), and stop.
 
             You are the judge, not the worker. Be adversarial: find EVERY reason
             this spec is not ready — ambiguity, missing or untestable acceptance
@@ -54,21 +64,24 @@ jobs:
 
             Verdict:
             - PASS (every bar item holds): post a brief PASS summary as an issue
-              comment, remove `triage-requested`, add `ready-for-agent`. Then
-              run the frontier check and report its outcome in the same comment:
-              (a) any open issue referenced in `Blocked by`?
+              comment, remove `triage-requested`, add `ready-for-agent` AND
+              `agent:implement`. Then run the frontier check and report its
+              outcome in the same comment:
+              (a) any open issue in the native blocked-by edges or the
+                  `Blocked by` text section?
               (b) does the `Touches` list overlap files changed by any open PR
                   (`gh pr list --state open`, then `gh pr view <N> --json files`)
-                  or by any other `ready-for-agent` / `in-progress` issue's
-                  `Touches`? (c) any external gate still pending (`blocked-external`,
-                  unresolved Human gates)? If anything is waiting, ALSO add the
-              `blocked` label with the specific reason (issue ref, file list, or
-              gate). Approval and hold are orthogonal — never one instead of
-              the other. Either way, stop: that label state starts (or correctly
-              holds) implementation automatically.
+                  or by any other `agent:implement` / `agent:in-progress`
+                  issue's `Touches`? (c) any external gate still pending
+                  (`blocked-external`, unresolved Human gates)? If anything is
+                  waiting, ALSO add the `agent:blocked` label with the specific
+                  reason (issue ref, file list, or gate). Approval and hold are
+                  orthogonal — never one instead of the other. Either way, stop:
+                  that label state starts (or correctly holds) implementation
+                  automatically.
             - FAIL: post the gaps as a numbered, actionable list. Replace
-              `triage-requested` with `needs-triage`, remove `blocked` if
-              present (rework moots the hold), and stop.
+              `triage-requested` with `needs-triage`, remove `agent:blocked`
+              and legacy `blocked` if present (rework moots the hold), and stop.
 
             Do NOT implement anything. No branches, no PRs, no code changes.
             Never push to `main`. Never merge. Never read or echo secrets.
