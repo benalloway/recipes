@@ -45,21 +45,44 @@ npm run db:migrate:remote   # D1 migrations to production recipes-db
 Seeds are static, idempotent SQL (`scripts/seed.sql`, INSERT OR IGNORE) —
 run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 
-## Workflow (labels drive everything)
+## Workflow — issue to merged PR (follow every step, in order)
 
-- **Work lane:** pick only issues labeled `ready-for-agent`. Stay inside the
-  issue body; scope-creep goes in a comment, not the PR.
-- Lanes you do not work: `needs-triage`, `ready-for-human`
-  (owner-only actions), `blocked-external` (Cloudflare dashboard / Resend DNS).
-- Branch naming: `feat/mN-short-desc` or `fix/short-desc`.
-- Before pushing: `npm run check` + `npm run build` green. CI re-verifies
-  (.github/workflows/ci.yml) — a red CI blocks the review.
-- PRs: base `main`, label `ai-drafted-feedback` + the issue's milestone number,
-  and include: issue reference, what/why, verification commands + output, and
-  an explicit **Human gates** section whenever anything needs the owner
-  (dashboard actions, credentials, DNS).
-- Post progress comments on the issue as you go; close issues you actually
-  finished closing PRs reference (`Closes #N`).
+0. **Claim:** work only issues labeled `ready-for-agent`, one at a time.
+   Comment on the issue that you're starting. Stay inside the issue body;
+   scope-creep goes in a comment, not the PR. Never pull from `needs-triage`,
+   `ready-for-human` (owner-only actions), or `blocked-external`.
+1. **Branch:** `git checkout main && git pull --ff-only`, then
+   `git checkout -b feat/mN-short-desc` or `fix/short-desc`.
+   Never work on `main`. Never push to `main` (merges deploy to prod).
+2. **Work:** small commits, imperative messages (`area: what`). Never commit
+   secrets, tokens, `.dev.vars`, or unrelated files.
+3. **Verify before every push:** `npm run check` + `npm run build` green.
+   Fix the cause; never weaken types or config to silence errors.
+4. **Push:** `git push -u origin <branch>` — your branch only.
+5. **Open PR:** `gh pr create --base main` with title `<type>(mN): short desc`;
+   body follows `.github/PULL_REQUEST_TEMPLATE.md` (Issue `Closes #N`,
+   What/Why, Verification, Human gates). Then
+   `gh pr edit --add-label ai-drafted-feedback --add-milestone <mN>`.
+   Merge auto-closes the issue via `Closes #N` — never close issues by hand.
+6. **Review loop** (repeat until green — do not skip steps):
+   - CI: `gh pr checks <N>`. `main` requires strict-green `build`, so fix
+     failures, re-run check/build locally, push.
+   - Threads: `main` requires every conversation resolved. Read them all —
+     `gh pr view <N> --comments` plus inline:
+     `gh api repos/benalloway/recipes/pulls/<N>/comments`.
+     Address each one: fix the code or reply with reasoning. Bot reviews
+     (opencode-review) count as reviewers — apply or rebut, never ignore.
+     Reply `addressed in <sha>` on threads you fixed; resolve only those,
+     and leave owner/human threads for the owner.
+   - Stale branch (`main` moved): `git fetch origin && git rebase origin/main`,
+     then `git push --force-with-lease`. Never merge `main` into the branch
+     (linear history is enforced on `main`).
+7. **Land:** you NEVER merge and NEVER push to `main`. When CI is green and
+   every thread is addressed, comment `ready for owner merge` on the PR and
+   stop. Owner merges; post-merge verify/deploy is the owner's job.
+- **Blocked?** Missing secret, dashboard/DNS action, or anything matching
+  `blocked-external`: document it in Human gates + an issue/PR comment and
+  stop. Don't guess at prod.
 
 ## Deploy policy
 

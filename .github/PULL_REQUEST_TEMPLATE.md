@@ -21,3 +21,10 @@ Closes #<number>
 - [ ] Platform glue confined to adapters boundary (if relevant)
 - [ ] `CHANGES.md` updated if this changes production (schema/deploy)
 - [ ] Labels: `ai-drafted-feedback` + issue's milestone
+
+## Review loop (agent: complete before handing to owner)
+
+- [ ] CI green (`gh pr checks`) and branch rebased on latest `main`
+- [ ] Every reviewer thread replied to (human + bot); fixes pushed
+- [ ] Re-ran `npm run check` + `npm run build` after last change
+- [ ] Commented `ready for owner merge` (agents never merge / push to `main`)
