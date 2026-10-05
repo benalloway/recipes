@@ -12,6 +12,20 @@ would ever need undoing.
 
 ---
 
+## 2026-10-05 — M2: magic-link auth + sessions live (PR #11)
+
+Change: email magic-link login end-to-end — session middleware gates all
+pages (302 to `/login`), `POST /auth/request` (validate, 1/email/30s
+rate-limit, SHA-256 token, 15-min TTL), `GET /auth/verify` (single-use
+consume → 30d session cookie), `POST /auth/logout`, `/login` page
+(Email/Phone tabs), console-fallback mail until #6. No migrations.
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e via
+`npm run dev` (unauth 302, request/verify/logout flow, 429 on re-POST,
+token reuse rejected); `curl -s https://recipes.benalloway.com/login`.
+
+Rollback: `npx wrangler rollback` (no schema change).
+
 ## 2026-10-05 — auto-deploy pipeline enabled (PR #10)
 
 Change: Actions deploy job now ships `main` on every merge (remote D1 migrations
