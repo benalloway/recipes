@@ -17,6 +17,9 @@ npm run check        # tsc --noEmit
 
 npm run db:migrate:local    # apply D1 migrations to local/miniflare sqlite
 npm run db:migrate:remote   # apply D1 migrations to production recipes-db
+
+npm run db:seed:local       # idempotent seed (tags + ingredients) — local
+npm run db:seed:remote      # idempotent seed — production
 ```
 
 Secrets: copy `.dev.vars.example` → `.dev.vars` (gitignored) for local dev;

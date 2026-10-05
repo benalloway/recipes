@@ -50,7 +50,7 @@ schema pre-defined to match recipe-draft shape.
 ```sql
 users(id, email UNIQUE, phone NULL, display_name, created_at)
 magic_tokens(id, user_id, token_hash, expires_at, used_at NULL)   -- 15-min TTL, single-use, SHA-256, 1/email/30s rate limit
-sessions(id, user_id, expires_at)                                 -- ~30d; HttpOnly, Secure, SameSite=Lax
+sessions(id, user_id, token_hash UNIQUE, expires_at)              -- ~30d; HttpOnly, Secure, SameSite=Lax; hash-at-rest
 
 recipes(id, owner_user_id, forked_from_recipe_id NULL, forked_from_version_id NULL,
         head_version_id, deleted_at NULL, created_at)             -- soft delete
