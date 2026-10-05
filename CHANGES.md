@@ -10,6 +10,18 @@ would ever need undoing.
 
 ---
 
+---
+
+## 2026-10-05 — auto-deploy pipeline enabled (PR #10)
+
+Change: Actions deploy job now ships `main` on every merge (remote D1 migrations
+→ `npm run deploy`); creds via CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID repo
+secrets. Worker behavior unchanged.
+
+Verify: deploy job green on the tooling merge run; `curl -s https://recipes.benalloway.com/api/health`.
+
+Rollback: n/a — pipeline config only; worker rollback path unchanged.
+
 ## 2026-10-04 — M1: schema + seeds applied to prod (PR #9)
 
 Change: D1 `0001_init.sql` applied to recipes-db (all 10 tables); `scripts/seed.sql`
