@@ -167,7 +167,9 @@ never `ready-for-agent` directly), and `docs/agents/triage-labels.md`
 (label vocabulary incl. `blocked`). Useful skills: `to-tickets` (vertical
 slices with `Blocked by` edges), `grill-with-docs` (plan sessions), `triage`
 (spec review input — the workflows' triage verdict still rules),
-`improve-codebase-architecture` (deep-module audits).
+`improve-codebase-architecture` (deep-module audits), `wayfinder` (multi-session
+decision maps), `diagnosing-bugs` (hard-bug loop), `code-review`
+(local pre-push self-review), `retro` (post-session env feedback).
 
 ## Misc
 
