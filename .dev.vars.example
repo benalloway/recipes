@@ -1,2 +1,5 @@
-# Copy to .dev.vars (gitignored) for local dev
+# Copy to .dev.vars (gitignored) for local dev.
+# These surface through the Worker env binding (cloudflare:workers env.*) —
+# never through process.env. In production, set via `wrangler secret put`.
 RESEND_API_KEY=re_xxxxxxxx
+AI_IMPORT_ENABLED=false

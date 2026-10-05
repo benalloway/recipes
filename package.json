@@ -6,12 +6,12 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "wrangler dev",
-    "deploy": "npm run build && node scripts/patch-deploy-config.mjs && wrangler deploy -c dist/server/wrangler.json",
+    "deploy": "npm run build && wrangler deploy -c dist/server/wrangler.json --domain recipes.benalloway.com",
     "db:migrate:local": "wrangler d1 migrations apply recipes-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply recipes-db --remote",
     "db:seed:local": "node scripts/seed.mjs --local",
     "db:seed:remote": "node scripts/seed.mjs --remote",
-    "check": "tsc --noEmit"
+    "check": "astro sync && tsc --noEmit"
   },
   "repository": {
     "type": "git",

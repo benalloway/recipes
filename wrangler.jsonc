@@ -21,5 +21,7 @@
   "routes": [
     { "pattern": "recipes.benalloway.com", "custom_domain": true }
   ],
+  "workers_dev": false,
+  "preview_urls": false,
   "observability": { "enabled": true }
 }
