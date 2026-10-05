@@ -44,11 +44,17 @@ jobs:
           DATA=$(gh issue view "$ISSUE_NUMBER" --json body,labels)
           LABELS=$(echo "$DATA" | jq -r '.labels[].name')
           BODY=$(echo "$DATA" | jq -r '.body // ""')
+          # Trust the triggering event over a possibly-stale label read: on a
+          # `blocked`-removal event, drop it even if the API still returns it.
+          if [ "${{ github.event.action }}" = "unlabeled" ] && [ "${{ github.event.label.name }}" = "blocked" ]; then
+            LABELS=$(echo "$LABELS" | grep -vx "blocked" || true)
+          fi
           has() { echo "$LABELS" | grep -qx "$1"; }
           refuse() {
             echo "refused=true" >> "$GITHUB_OUTPUT"
             printf 'Preflight refusal: %s\n' "$1" >> "$GITHUB_STEP_SUMMARY"
-            gh issue comment "$ISSUE_NUMBER" --body "$1"
+            LAST=$(gh issue view "$ISSUE_NUMBER" --json comments --jq '.comments[-1].body // ""')
+            if [ "$LAST" != "$1" ]; then gh issue comment "$ISSUE_NUMBER" --body "$1"; fi
           }
 
           # 0. Explicit hold or external gate.
@@ -79,25 +85,30 @@ jobs:
           fi
 
           # 2. An open PR already closing this issue (duplicate-run guard).
-          EXISTING=$(gh pr list --state open --json number,body --jq "[.[] | select(.body | test(\"(?i)(closes|fixes|resolves)\\\\s+#$ISSUE_NUMBER\\\\b\")) | .number] | join(\" \")")
+          EXISTING=$(gh pr list --state open --limit 100 --json number,body --jq "[.[] | select((.body // \"\") | test(\"(?i)(closes|fixes|resolves)\\\\s+#$ISSUE_NUMBER\\\\b\")) | .number] | join(\" \")")
           if [ -n "$EXISTING" ]; then
             refuse "Not running: open PR(s) ($EXISTING) already target this issue. Close them first, or work there instead of re-labeling."
             exit 0
           fi
 
           # 3. Same-file overlap between the spec's `Touches` list and open PRs.
-          TOUCHES=$(echo "$BODY" | awk '/^## Touches/{f=1;next}/^## /{f=0}f' | grep -o '`[^`]*`' | tr -d '`' | grep -E '/|\.(ts|astro|css|sql|yml|md|jsonc?)$' | sort -u || true)
-          if [ -n "$TOUCHES" ]; then
-            for pr in $(gh pr list --state open --json number --jq '.[].number'); do
-              FILES=$(gh pr view "$pr" --json files --jq '.files[].path')
-              HIT=$(comm -12 <(echo "$TOUCHES" | sort -u) <(echo "$FILES" | sort -u) || true)
-              if [ -n "$HIT" ]; then
-                gh issue edit "$ISSUE_NUMBER" --add-label "blocked" || true
-                refuse "Not running: \`Touches\` overlap with open PR #$pr: $(echo "$HIT" | tr '\n' ' '). Applied \`blocked\`; remove it after #$pr merges (rebase onto main first)."
-                exit 0
-              fi
-            done
+          # Fail closed: backticked tokens without spaces are paths; an empty
+          # list means "no conflict data", never "no conflicts".
+          TOUCHES=$(echo "$BODY" | awk '/^## Touches/{f=1;next}/^## /{f=0}f' | grep -o '`[^`]*`' | tr -d '`' | grep -v ' ' | grep -v '^$' | sort -u || true)
+          if [ -z "$TOUCHES" ]; then
+            gh issue edit "$ISSUE_NUMBER" --add-label "blocked" || true
+            refuse "Not running: no parseable \`Touches\` paths found. Add backticked repo-relative paths (no spaces) per .github/ISSUE_TEMPLATE/agent-task.md, then remove \`blocked\` to retry."
+            exit 0
           fi
+          for pr in $(gh pr list --state open --limit 100 --json number --jq '.[].number'); do
+            FILES=$(gh pr view "$pr" --json files --jq '.files[].path')
+            HIT=$(comm -12 <(echo "$TOUCHES" | sort -u) <(echo "$FILES" | sort -u) || true)
+            if [ -n "$HIT" ]; then
+              gh issue edit "$ISSUE_NUMBER" --add-label "blocked" || true
+              refuse "Not running: \`Touches\` overlap with open PR #$pr: $(echo "$HIT" | tr '\n' ' '). Applied \`blocked\`; remove it after #$pr merges (rebase onto main first)."
+              exit 0
+            fi
+          done
 
           # Frontier clear: mark in-flight, drop any stale hold.
           gh issue edit "$ISSUE_NUMBER" --add-label "in-progress" || true
