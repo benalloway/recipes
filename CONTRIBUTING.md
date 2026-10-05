@@ -42,8 +42,9 @@ the PR and the Actions tab. Nudge anytime with `/oc <instruction>` comments.
 
 ## Work it locally instead (yours only)
 
-Nothing in the automation fires on plain comments, the `in-progress` label,
-opening a PR, or adding `blocked` — local work is safe if you claim it:
+Plain comments (unless `/oc`), adding `in-progress`, and adding `blocked` do
+not start cloud implementation. Opening a PR does start `opencode-review`,
+but not cloud implementation. Local work is safe if you claim it:
 
 0. Comment `taking this locally`, add `in-progress`, and make sure the issue
    has `Blocked by` + `Touches` (your PR then guards the issue from
@@ -55,9 +56,12 @@ opening a PR, or adding `blocked` — local work is safe if you claim it:
    `Closes #N`), plus local-only superpowers: `npm run preview`, wrangler
    CLIs, direct D1/R2.
 2. Opening the PR gets you a free bot review; add `ai-drafted-feedback` to
-   also get the auto-address loop.
-3. To take over a cloud PR, work on its branch; remove `ai-drafted-feedback`
-   to stop the loop, or comment `/oc continue …` to hand back.
+   also get the auto-address loop. Remove `in-progress` once the PR is open;
+   the PR becomes the in-flight marker.
+3. To take over a cloud PR, work on its branch and remove
+   `ai-drafted-feedback` to stop the loop. To hand back, push your changes,
+   re-add `ai-drafted-feedback`, then comment `/oc continue …`; adding the
+   label alone does not restart the address loop.
 
 ## Merge (yours only)
 

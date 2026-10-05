@@ -88,9 +88,9 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 
 ## Working locally (human + local agents — automation-safe)
 
-The GitHub automation never fires on comments (without `/oc`), on the
-`in-progress` label, on opening a PR, or on adding `blocked` — so a local
-session cannot accidentally start a cloud run. Follow this protocol:
+Plain comments (unless `/oc`), adding `in-progress`, and adding `blocked` do
+not start a cloud implement run. Opening a PR does start `opencode-review`,
+but not cloud implementation. Follow this protocol:
 
 0. **Claim:** comment `taking this locally` on the issue and add `in-progress`.
    Ensure the issue has `Blocked by` + `Touches` sections (template) so the
@@ -109,10 +109,10 @@ session cannot accidentally start a cloud run. Follow this protocol:
 3. **Take over a cloud PR:** work on its branch directly. To fully take over,
    remove `ai-drafted-feedback` (stops the loop) and say so in a comment.
    To hand back, push, re-add the label, comment `/oc continue …`.
-4. **Your open `Closes #N` PR is a guard:** implement preflight refuses to
-   start a duplicate run while it exists, and triage overlap-checks your
-   `in-progress` issue's `Touches`. Remove `in-progress` when the PR merges
-   (merge closes the issue anyway).
+ 4. **Your open `Closes #N` PR is a guard:** implement preflight refuses to
+    start a duplicate run while it exists, and triage overlap-checks your
+    `in-progress` issue's `Touches`. Remove `in-progress` once the PR is open;
+    the PR becomes the in-flight marker.
 
 ## Autonomous pipeline (no human in the loop)
 
