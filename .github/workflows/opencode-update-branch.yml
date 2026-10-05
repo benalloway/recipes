@@ -41,7 +41,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if git rebase main; then
-            git push --force-with-lease="refs/heads/$BRANCH:$HEAD_SHA" origin "$BRANCH"
+            git push --force-with-lease="refs/heads/$BRANCH:$HEAD_SHA" origin -- "$BRANCH"
             gh pr edit "$PR_NUMBER" --remove-label "agent:update-branch" || true
             gh pr comment "$PR_NUMBER" --body "Rebased onto latest \`main\` cleanly."
             echo "ok=true" >> "$GITHUB_OUTPUT"

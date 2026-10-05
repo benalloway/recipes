@@ -7,7 +7,8 @@ name: opencode-triage
 #   frontier check (native blocked-by edges, `Blocked by` text, `Touches`
 #   overlap with open PRs / in-flight issues, external gates). Anything
 #   waiting → also applies `agent:blocked`.
-# - FAIL → gaps list posted, back to `needs-triage` (clears `agent:blocked`).
+# - FAIL → gaps list posted, back to `needs-triage` (clears `agent:blocked`
+#   and legacy `blocked`).
 
 on:
   issues:
