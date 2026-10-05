@@ -35,8 +35,11 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          case "$BRANCH" in
+            -*|"") echo "refusing: suspicious branch name"; exit 1;;
+          esac
           git fetch origin main:main || git fetch origin main
-          git fetch origin "$BRANCH" || true
+          git fetch origin -- "$BRANCH" || true
           git checkout -B -- "$BRANCH" "$HEAD_SHA"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
