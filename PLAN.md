@@ -111,8 +111,11 @@ Same tokens, same look — no visual change from the swap:
   SPF/DKIM records to Cloudflare DNS, verify `benalloway.com`, send from
   `login@benalloway.com`)
 - **M3** — recipe CRUD: forms, R2 images, soft delete + confirm modal,
-  dashboard + favorites + tag chips
-- **M4** — versioning: append-on-save, history timeline, revert
+  dashboard + favorites + tag chips (sliced 2026-10-05 after triage FAILed #14
+  as too big for one PR: #13 reads, #14 create, #15 edit/append-n+1, #16 images,
+  #17 delete; original #14 spec archived verbatim in its comments)
+- **M4** — versioning: history timeline, revert (append-on-save edit path lands
+  in #15 per 2026-10-05 owner call)
 - **M5** — quantity scaler island + fraction display (½ ⅓ ⅛, egg/clove hints)
 - **M6** — share-by-link + fork
 - **M7** — version diff viewer; capsule engine (ingredient-overlap recipe
