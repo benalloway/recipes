@@ -1,0 +1,27 @@
+// NOTE: `recipes-media` (R2) is not yet created — R2 must be enabled in the
+// Cloudflare dashboard first (issue #2, blocked-external). The MEDIA binding is
+// commented out until then; re-add it at M3 when image uploads land.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "recipes",
+  "compatibility_date": "2026-09-16",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "recipes-db", "database_id": "0866a3f2-8824-4871-9368-91e3f4b8aed6" }
+  ],
+  "kv_namespaces": [
+    { "binding": "SESSION", "id": "ff23ec36dbbd4171bba0673024673e86" }
+  ],
+  // "r2_buckets": [
+  //   { "binding": "MEDIA", "bucket_name": "recipes-media" }
+  // ],
+  "routes": [
+    { "pattern": "recipes.benalloway.com", "custom_domain": true }
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true }
+}
