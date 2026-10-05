@@ -22,7 +22,7 @@ labels: needs-triage
 
 ## Blocked by
 
-<!-- edges gating execution: `- #N (why)` per open dependency, `- external: ...` per out-of-band gate, or `None (can start immediately)`. Triage PASS applies `blocked` while any edge is open. Heading must stay exactly `## Blocked by` — parsed by automation. -->
+<!-- edges gating execution: `- #N (why)` per open dependency, `- external: ...` per out-of-band gate, or `None (can start immediately)`. Triage PASS applies `agent:blocked` while any edge is open. Heading must stay exactly `## Blocked by` — parsed by automation. -->
 
 - None (can start immediately).
 

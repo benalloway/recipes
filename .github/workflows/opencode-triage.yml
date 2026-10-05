@@ -7,8 +7,7 @@ name: opencode-triage
 #   frontier check (native blocked-by edges, `Blocked by` text, `Touches`
 #   overlap with open PRs / in-flight issues, external gates). Anything
 #   waiting → also applies `agent:blocked`.
-# - FAIL → gaps list posted, back to `needs-triage` (clears `agent:blocked`
-#   and legacy `blocked`).
+# - FAIL → gaps list posted, back to `needs-triage` (clears `agent:blocked`).
 
 on:
   issues:
@@ -81,7 +80,7 @@ jobs:
                   automatically.
             - FAIL: post the gaps as a numbered, actionable list. Replace
               `triage-requested` with `needs-triage`, remove `agent:blocked`
-              and legacy `blocked` if present (rework moots the hold), and stop.
+              if present (rework moots the hold), and stop.
 
             Do NOT implement anything. No branches, no PRs, no code changes.
             Never push to `main`. Never merge. Never read or echo secrets.

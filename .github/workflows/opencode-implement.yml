@@ -17,7 +17,7 @@ jobs:
     if: |
       !github.event.issue.pull_request && (
         (github.event.action == 'labeled' && github.event.label.name == 'agent:implement') ||
-        (github.event.action == 'unlabeled' && (github.event.label.name == 'agent:blocked' || github.event.label.name == 'blocked'))
+        (github.event.action == 'unlabeled' && github.event.label.name == 'agent:blocked')
       )
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -52,7 +52,7 @@ jobs:
           if [ "${{ github.event.action }}" = "unlabeled" ]; then
             DROP="${{ github.event.label.name }}"
             case "$DROP" in
-              agent:blocked|blocked)
+              agent:blocked)
                 LABELS=$(echo "$LABELS" | grep -vx "$DROP" || true) ;;
             esac
           fi
@@ -79,21 +79,19 @@ jobs:
 
           # 0b. Active claim (cloud run or local session). Never stack runs:
           # a running implement will NOT abort (cancel-in-progress: false).
-          # Checks both vocabularies during the cutover transition.
-          if has agent:in-progress || has in-progress; then
-            refuse "Not running: an in-flight claim is present (\`agent:in-progress\` / legacy \`in-progress\`) — a run (cloud or local) already holds this issue. If it is stale, remove the label to retry."
+          if has agent:in-progress; then
+            refuse "Not running: an in-flight claim is present (\`agent:in-progress\`) — a run (cloud or local) already holds this issue. If it is stale, remove the label to retry."
             exit 0
           fi
 
-          # 0c. Explicit hold (either vocabulary during transition).
-          if has agent:blocked || has blocked; then
-            refuse "Not running: a hold is present (\`agent:blocked\` / legacy \`blocked\`). Remove it once the hold clears to re-fire this check (only proceeds with \`agent:implement\` still applied)."
+          # 0c. Explicit hold.
+          if has agent:blocked; then
+            refuse "Not running: a hold is present (\`agent:blocked\`). Remove it once the hold clears to re-fire this check (only proceeds with \`agent:implement\` still applied)."
             exit 0
           fi
 
           # Unblock events need a standing trigger; a bare hold removal
-          # (`agent:blocked` or legacy `blocked`) on an untriggered issue must
-          # not start work.
+          # on an untriggered issue must not start work.
           if [ "${{ github.event.action }}" = "unlabeled" ] && ! has agent:implement; then
             refuse "Not running: a hold was removed but the issue is not \`agent:implement\`. Re-request triage first."
             exit 0
@@ -139,7 +137,7 @@ jobs:
           fi
 
           # 3. Same-file overlap between the spec's `Touches` list and open PRs
-          # AND in-flight (`agent:in-progress` / legacy `in-progress`) issues.
+          # AND in-flight (`agent:in-progress`) issues.
           # Fail closed: backticked tokens without spaces are paths; an empty
           # list means "no conflict data", never "no conflicts".
           TOUCHES=$(echo "$BODY" | awk '/^## Touches/{f=1;next}/^## /{f=0}f' | grep -o '`[^`]*`' | tr -d '`' | grep -v ' ' | grep -v '^$' | sort -u || true)
@@ -166,7 +164,7 @@ jobs:
               exit 0
             fi
           done
-          INFLIGHT=$(gh issue list --state open --limit 100 --json number,labels --jq ".[] | select(any(.labels[]; .name == \"agent:in-progress\" or .name == \"in-progress\")) | select(.number != $ISSUE_NUMBER) | .number" || echo "__API_FAIL__")
+          INFLIGHT=$(gh issue list --state open --limit 100 --json number,labels --jq ".[] | select(any(.labels[]; .name == \"agent:in-progress\")) | select(.number != $ISSUE_NUMBER) | .number" || echo "__API_FAIL__")
           if [ "$INFLIGHT" = "__API_FAIL__" ]; then
             gh issue edit "$ISSUE_NUMBER" --add-label "agent:blocked" || true
             refuse "Not running: could not list in-flight issues (API failure) — refusing closed rather than risk same-file double-implement. Applied \`agent:blocked\`; remove it to retry."
@@ -183,11 +181,9 @@ jobs:
             fi
           done
 
-          # Frontier clear: mark in-flight, drop any stale hold (both
-          # vocabularies during transition).
+          # Frontier clear: mark in-flight, drop any stale hold.
           gh issue edit "$ISSUE_NUMBER" --add-label "agent:in-progress" || true
           gh issue edit "$ISSUE_NUMBER" --remove-label "agent:blocked" || true
-          gh issue edit "$ISSUE_NUMBER" --remove-label "blocked" || true
           echo "refused=false" >> "$GITHUB_OUTPUT"
 
       - uses: anomalyco/opencode/github@latest
@@ -217,9 +213,7 @@ jobs:
                ambiguous: do NOT implement. Post a comment listing exactly what
                is missing, replace the `agent:implement` label with
                `needs-triage`, remove `ready-for-agent`, `agent:in-progress`,
-               `agent:blocked`, and legacy `blocked` / `in-progress` if present
-               (stale approval and stale claims must not linger beside
-               `needs-triage`), and stop.
+               `agent:blocked`, and stop.
 
             Done means ALL of these are true:
             - If a branch/PR already exists for this issue, continue it — do not

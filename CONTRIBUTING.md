@@ -75,8 +75,7 @@ you what to check).
 - **Blocked issue:** read the `agent:blocked` comment for the reason (open `Blocked
   by` ref, file conflict, external gate, failed run). Fix the cause, then
   remove the `agent:blocked` label — implement re-fires automatically if
-  `agent:implement` is still applied. (Legacy `blocked` also re-fires until
-  the docs audit retires it.) Never remove `agent:blocked` to "see what
+  `agent:implement` is still applied. Never remove `agent:blocked` to "see what
   happens"; the preflight will just re-apply it with another comment.
 - **Stop automation** on any issue/PR (any one works): add `ready-for-human`,
   remove `agent:review`, or close the PR/issue.

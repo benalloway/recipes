@@ -89,9 +89,7 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 ## Working locally (human + local agents — automation-safe)
 
 Plain comments (unless `/oc`), adding `agent:in-progress`, and adding
-`agent:blocked` do not start a cloud implement run. (Legacy `in-progress` /
-`blocked` are still honored by the preflight during transition; they retire
-in the docs audit.) Opening a PR does start `opencode-review`, but not cloud implementation. Follow this protocol:
+`agent:blocked` do not start a cloud implement run. Opening a PR does start `opencode-review`, but not cloud implementation. Follow this protocol:
 
 0. **Claim:** comment `taking this locally` on the issue and add `agent:in-progress`.
    Ensure the issue has `Blocked by` + `Touches` sections (template) so the
@@ -165,7 +163,7 @@ Project skills live in `.agents/skills/` (Pocock set, pinned in
 read `docs/agents/domain.md` (vocabulary + doc map),
 `docs/agents/issue-tracker.md` (tracker rules: publish as `needs-triage`,
 never `ready-for-agent` directly), and `docs/agents/triage-labels.md`
-(label vocabulary incl. `blocked`). Useful skills: `to-tickets` (vertical
+(label vocabulary incl. the `agent:*` execution roles). Useful skills: `to-tickets` (vertical
 slices with `Blocked by` edges), `grill-with-docs` (plan sessions), `triage`
 (spec review input — the workflows' triage verdict still rules),
 `improve-codebase-architecture` (deep-module audits), `wayfinder` (multi-session
