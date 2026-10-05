@@ -34,7 +34,8 @@ jobs:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          model: opencode-go/kimi-k3
+          model: opencode-go/glm-5.3-flash
+          variant: max
           use_github_token: true
           prompt: |
             Implement GitHub issue #${{ github.event.issue.number }} in this repo.

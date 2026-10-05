@@ -41,7 +41,8 @@ jobs:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          model: opencode-go/kimi-k3
+          model: opencode-go/glm-5.3-flash
+          variant: max
           use_github_token: true
           prompt: |
             A review bot just posted on autonomous PR #${{ github.event.issue.number }}
