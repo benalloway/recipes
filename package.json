@@ -27,7 +27,9 @@
   "homepage": "https://github.com/benalloway/recipes#readme",
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
-    "astro": "^7.3.5"
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.3.5",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

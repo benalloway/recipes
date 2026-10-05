@@ -1,33 +1,47 @@
-:root {
-  --bg: #fbfbf9;
-  --surface: #ffffff;
-  --hairline: #e3e3e0;
-  --ink: #1a1a1a;
-  --muted: #8a8a86;
-  --accent: #9a8c7c;
+/* Tailwind CSS v4 — CSS-first config.
+   Design tokens live in @theme below and generate utilities
+   (bg-bg, bg-surface, border-hairline, text-ink, text-muted, text-accent, font-sans).
+   Preflight is intentionally NOT imported: the design language keeps
+   browser-default rendering for unstyled elements, so the reset would be
+   a visual change. Revisit only with an explicit design decision. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-bg: #fbfbf9;
+  --color-surface: #ffffff;
+  --color-hairline: #e3e3e0;
+  --color-ink: #1a1a1a;
+  --color-muted: #8a8a86;
+  --color-accent: #9a8c7c;
+
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 15px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-}
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
 
-a:hover {
-  opacity: 0.8;
+  a:hover {
+    opacity: 0.8;
+  }
 }

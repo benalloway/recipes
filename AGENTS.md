@@ -22,9 +22,13 @@ reviewable PR without hand-holding. Non-negotiable rules first, context after.
   Secrets: `.dev.vars` (gitignored) locally, `wrangler secret put` in prod.
 - Migrations are plain-SQLite SQL in `migrations/` (portable, no D1-only
   syntax). Ingredients are relational rows; steps/security prose stays JSON.
-- Design system is fixed: tokens live in `src/styles/global.css`
-  (bone white, hairlines, single accent). Do not introduce new colors, fonts,
-  shadows, or animation beyond the tokens.
+- Design system is fixed: Tailwind CSS v4 (CSS-first config) with tokens
+  in `@theme` in `src/styles/global.css` (bone white, hairlines, single
+  accent) generating utilities (`bg-bg`, `text-ink`, `border-hairline`,
+  `text-accent`, ...). Style with those utilities; keep base element styles
+  in `@layer base`. Do not introduce new colors, fonts, shadows, or animation
+  beyond the tokens. Preflight is intentionally off (see `global.css` header)
+  — do not enable it without an explicit design decision.
 
 ## Commands
 

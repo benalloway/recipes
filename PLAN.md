@@ -87,8 +87,16 @@ purely in tags. Free-form `unit` TEXT already accommodates drinks vocabulary
 
 ## Design system (American Psycho business card)
 
+Implemented with Tailwind CSS v4 (CSS-first config, `@tailwindcss/vite`).
+Same tokens, same look — no visual change from the swap:
+
 - Bone white `#FBFBF9`; white surfaces; hairline `#E3E3E0`; ink `#1A1A1A`;
   muted `#8A8A86`; single accent `#9A8C7C` (links/focus only)
+- Tokens live in `@theme` in `src/styles/global.css` → utilities `bg-bg`,
+  `bg-surface`, `border-hairline`, `text-ink`, `text-muted`, `text-accent`,
+  `font-sans`. Base element styles stay in `@layer base` in the same file
+- Preflight is intentionally off (browser defaults preserved for unstyled
+  elements); enabling it would be a visual change needing a design decision
 - System type stack: Helvetica Neue → Helvetica → Arial; 10px letter-spaced
   uppercase micro-labels; light 22–28px headings; tabular numerals
 - 8px grid; hairline flat cards; no shadows; ≤2px radius; motion = 120ms opacity only
