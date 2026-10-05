@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,3 +18,18 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+
+  deploy:
+    name: deploy (prod)
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx wrangler d1 migrations apply recipes-db --remote
+      - run: npm run deploy

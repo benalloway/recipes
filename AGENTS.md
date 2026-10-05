@@ -59,9 +59,13 @@ M1 will add `migrations/0001_*.sql` and `scripts/seed.mjs` (plus
 
 ## Deploy policy
 
-- `npm run deploy` and `db:migrate:remote` touch **production**
-  (recipes.benalloway.com). Only run them when the issue or the owner
-  explicitly authorizes it in-conversation.
+- Merges to `main` automatically deploy to production: the Actions deploy job
+  runs remote D1 migrations, then `npm run deploy`. Treat every merge as a
+  release — nothing half-finished goes into `main`.
+- Manual `npm run deploy` / `db:migrate:remote` are production actions: only run
+  them when the issue or the owner explicitly authorizes it in-conversation.
+- Any PR that changes what's live (schema, deploy config, worker behavior)
+  must add an entry to `CHANGES.md` (Change / Verify / Rollback) in the same PR.
 - Deploys require an authenticated wrangler/cf session owned by the human.
   Agents must never handle, read, or echo raw API tokens; never read
   `~/.config/cloudflare/` or `.dev.vars`.
