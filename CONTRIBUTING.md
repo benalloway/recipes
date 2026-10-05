@@ -25,11 +25,13 @@ the spec against this bar (adversarial — it hunts ambiguity, not excuses):
 - [ ] Goal is one outcome; Tasks are executable with no hidden context
 - [ ] Acceptance is verifiable (commands where possible)
 - [ ] Human gates filled in (`none` if not applicable)
+- [ ] `Blocked by` edges declared (or `None`), `Touches` paths listed
 - [ ] Single scope (one branch → one PR); milestone set
 - [ ] No open questions; nothing irreversible; no prod secrets required
 
-**Pass** → the triage agent applies `ready-for-agent` itself and
-implementation starts. **Fail** → you get a numbered gaps list and the
+**Pass** → the triage agent applies `ready-for-agent` itself (plus `blocked`
+while any `Blocked by` edge, file conflict, or external gate is open) and
+frontier-clear implementation starts. **Fail** → you get a numbered gaps list and the
 issue returns to `needs-triage`: fix the spec, re-request triage.
 
 ## Watch the pipeline
