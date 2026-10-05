@@ -1,0 +1,46 @@
+name: opencode-review
+
+# Automatic PR review with your OpenCode Go subscription.
+# Runs when a PR is opened / ready for review, and on every new push.
+# Draft PRs are skipped (ready-only, like Copilot's default).
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - uses: anomalyco/opencode/github@latest
+        env:
+          # Repo secret you must add once: Settings → Secrets → Actions → OPENCODE_API_KEY
+          # Value = your OpenCode Go API key (starts with oc_s...).
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: opencode-go/kimi-k3
+          use_github_token: true
+          prompt: |
+            Review this pull request. Do NOT push commits — leave review feedback only.
+
+            - Check for code quality issues, potential bugs, and security problems
+            - Suggest concrete improvements with file/line references
+            - Repo invariants (AGENTS.md): Astro 7 SSR + @astrojs/cloudflare, zero client framework;
+              portability boundary (only src/lib/runtime.ts, src/lib/adapters/*, src/env.d.ts may import
+              platform modules); runtime config from Worker env bindings (import { env } from
+              'cloudflare:workers'), never process.env; migrations are plain-SQLite SQL, no D1-only
+              syntax; design tokens in src/styles/global.css only (no new colors/fonts/shadows/animation)
+            - Workflow: one issue → one PR, base main, `npm run check` + `npm run build` must pass,
+              PRs touching live behavior (schema, deploy config, worker behavior) must update CHANGES.md
+              with Change / Verify / Rollback
+            - If the code follows all guidelines, say so briefly (lgtm-style) instead of nitpicking
