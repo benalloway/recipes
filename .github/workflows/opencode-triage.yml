@@ -3,10 +3,11 @@ name: opencode-triage
 # Adversarial spec review, independent of the implement agent.
 # Label an issue `triage-requested` and an agent verdicts it against the
 # `ready-for-agent` bar (see CONTRIBUTING.md):
-# - PASS → applies `ready-for-agent`, then runs the frontier check
-#   (open `Blocked by` refs, `Touches` overlap with open PRs / in-flight
-#   issues, external gates). Anything waiting → also applies `blocked`.
-# - FAIL → gaps list posted, back to `needs-triage` (clears `blocked`).
+# - PASS → applies `ready-for-agent` + `agent:implement`, then runs the
+#   frontier check (native blocked-by edges, `Blocked by` text, `Touches`
+#   overlap with open PRs / in-flight issues, external gates). Anything
+#   waiting → also applies `agent:blocked`.
+# - FAIL → gaps list posted, back to `needs-triage` (clears `agent:blocked`).
 
 on:
   issues:
@@ -79,7 +80,7 @@ jobs:
                   automatically.
             - FAIL: post the gaps as a numbered, actionable list. Replace
               `triage-requested` with `needs-triage`, remove `agent:blocked`
-              if present (rework moots the hold), and stop.
+              and legacy `blocked` if present (rework moots the hold), and stop.
 
             Do NOT implement anything. No branches, no PRs, no code changes.
             Never push to `main`. Never merge. Never read or echo secrets.

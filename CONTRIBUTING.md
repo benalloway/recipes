@@ -4,7 +4,7 @@ This repo is built by agents, directed by humans. The whole flow:
 
 ```
 idea → plan session → issue (needs-triage) → triage-requested
-  → agent verdicts spec → ready-for-agent → agent implements
+  → agent verdicts spec → ready-for-agent + agent:implement → agent implements
   → PR → auto review → auto address (≤2 rounds)
   → you merge → auto deploy → verify live
 ```
@@ -17,7 +17,7 @@ New issues land in `needs-triage` — automation ignores them there.
 
 ## Triage: the `ready-for-agent` bar
 
-`ready-for-agent` means **"go build this unattended"** — the implement
+`ready-for-agent` + `agent:implement` mean **"go build this unattended"** — the implement
 workflow fires immediately. Don't apply it by hand on a guess. Instead,
 label the issue `triage-requested`: an independent triage agent verdicts
 the spec against this bar (adversarial — it hunts ambiguity, not excuses):
@@ -29,38 +29,38 @@ the spec against this bar (adversarial — it hunts ambiguity, not excuses):
 - [ ] Single scope (one branch → one PR); milestone set
 - [ ] No open questions; nothing irreversible; no prod secrets required
 
-**Pass** → the triage agent applies `ready-for-agent` itself (plus `blocked`
+**Pass** → the triage agent applies `ready-for-agent` + `agent:implement` itself (plus `agent:blocked`
 while any `Blocked by` edge, file conflict, or external gate is open) and
 frontier-clear implementation starts. **Fail** → you get a numbered gaps list and the
 issue returns to `needs-triage`: fix the spec, re-request triage.
 
 ## Watch the pipeline
 
-`ready-for-agent` → implement opens a PR → review posts → address fixes
+`agent:implement` → implement opens a PR → review posts → address fixes
 (≤2 rounds) or flags disagreements with `ready-for-human`. Follow along in
 the PR and the Actions tab. Nudge anytime with `/oc <instruction>` comments.
 
 ## Work it locally instead (yours only)
 
-Plain comments (unless `/oc`), adding `in-progress`, and adding `blocked` do
+Plain comments (unless `/oc`), adding `agent:in-progress`, and adding `agent:blocked` do
 not start cloud implementation. Opening a PR does start `opencode-review`,
 but not cloud implementation. Local work is safe if you claim it:
 
-0. Comment `taking this locally`, add `in-progress`, and make sure the issue
+0. Comment `taking this locally`, add `agent:in-progress`, and make sure the issue
    has `Blocked by` + `Touches` (your PR then guards the issue from
    auto-implement). Never click `triage-requested` / `ready-for-agent` for
-   local work. If `ready-for-agent` is already on it, check Actions first —
+   local work. If `agent:implement` is already on it, check Actions first —
    a running cloud implement will not abort; only proceed if nothing runs,
    and remove the label to disarm it.
 1. Same conventions as cloud runs (branch names, check/build, `CHANGES.md`,
    `Closes #N`), plus local-only superpowers: `npm run preview`, wrangler
    CLIs, direct D1/R2.
-2. Opening the PR gets you a free bot review; add `ai-drafted-feedback` to
-   also get the auto-address loop. Remove `in-progress` once the PR is open;
+2. Opening the PR gets you a free bot review; add `agent:review` to
+   also get the auto-address loop. Remove `agent:in-progress` once the PR is open;
    the PR becomes the in-flight marker.
 3. To take over a cloud PR, work on its branch and remove
-   `ai-drafted-feedback` to stop the loop. To hand back, push your changes,
-   re-add `ai-drafted-feedback`, then comment `/oc continue …`; adding the
+   `agent:review` to stop the loop. To hand back, push your changes,
+   re-add `agent:review`, then comment `/oc continue …`; adding the
    label alone does not restart the address loop.
 
 ## Merge (yours only)
@@ -72,13 +72,13 @@ you what to check).
 
 ## Unblock / stop the loop (yours only)
 
-- **Blocked issue:** read the `blocked` comment for the reason (open `Blocked
+- **Blocked issue:** read the `agent:blocked` comment for the reason (open `Blocked
   by` ref, file conflict, external gate, failed run). Fix the cause, then
-  remove the `blocked` label — implement re-fires automatically if
-  `ready-for-agent` is still applied. Never remove `blocked` to "see what
+  remove the `agent:blocked` label — implement re-fires automatically if
+  `agent:implement` is still applied. Never remove `agent:blocked` to "see what
   happens"; the preflight will just re-apply it with another comment.
 - **Stop automation** on any issue/PR (any one works): add `ready-for-human`,
-  remove `ai-drafted-feedback`, or close the PR/issue.
+  remove `agent:review`, or close the PR/issue.
 - **Resume after you intervened:** remove `ready-for-human` and comment
   `/oc continue …` (see `.github/workflows/README.md`).
 - **Budget:** roughly ~4 agent sessions per issue (implement + review + up to

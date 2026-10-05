@@ -17,7 +17,7 @@ jobs:
     if: |
       !github.event.issue.pull_request && (
         (github.event.action == 'labeled' && github.event.label.name == 'agent:implement') ||
-        (github.event.action == 'unlabeled' && github.event.label.name == 'agent:blocked')
+        (github.event.action == 'unlabeled' && (github.event.label.name == 'agent:blocked' || github.event.label.name == 'blocked'))
       )
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -46,10 +46,13 @@ jobs:
           DATA=$(gh issue view "$ISSUE_NUMBER" --json body,labels)
           LABELS=$(echo "$DATA" | jq -r '.labels[].name')
           BODY=$(echo "$DATA" | jq -r '.body // ""')
-          # Trust the triggering event over a possibly-stale label read: on an
-          # `agent:blocked`-removal event, drop it even if the API still returns it.
-          if [ "${{ github.event.action }}" = "unlabeled" ] && [ "${{ github.event.label.name }}" = "agent:blocked" ]; then
-            LABELS=$(echo "$LABELS" | grep -vx "agent:blocked" || true)
+          # Trust the triggering event over a possibly-stale label read: on a
+          # hold-removal event, drop that hold even if the API still returns it.
+          if [ "${{ github.event.action }}" = "unlabeled" ]; then
+            case "${{ github.event.label.name }}" in
+              agent:blocked|blocked)
+                LABELS=$(echo "$LABELS" | grep -vx -e "agent:blocked" -e "blocked" || true) ;;
+            esac
           fi
           has() { echo "$LABELS" | grep -qx "$1"; }
           refuse() {
@@ -76,7 +79,7 @@ jobs:
           # a running implement will NOT abort (cancel-in-progress: false).
           # Checks both vocabularies during the cutover transition.
           if has agent:in-progress || has in-progress; then
-            refuse "Not running: \`agent:in-progress\` is present — a run (cloud or local) already holds this issue. If it is stale, remove the label to retry."
+            refuse "Not running: an in-flight claim is present (\`agent:in-progress\` / legacy \`in-progress\`) — a run (cloud or local) already holds this issue. If it is stale, remove the label to retry."
             exit 0
           fi
 
@@ -96,7 +99,10 @@ jobs:
           # 1. Open `Blocked by` refs: native dependency edges first, legacy
           # body-text section as fallback (so prose mentions like "needs #13"
           # don't false-fire — only the `## Blocked by` section is parsed).
-          NATIVE_REFS=$(gh api "repos/$REPO/issues/$ISSUE_NUMBER/dependencies/blocked_by" --jq '[.[] | select(.state == "OPEN") | .number] | join(" ")' 2>/dev/null || echo "")
+          # The per-ref `gh issue view` state check below is authoritative;
+          # the native payload is NOT pre-filtered so a shape change degrades
+          # loudly (empty → body-only) rather than silently dropping refs.
+          NATIVE_REFS=$(gh api "repos/$REPO/issues/$ISSUE_NUMBER/dependencies/blocked_by" --jq '[.[].number] | join(" ")' 2>/dev/null || echo "")
           BODY_REFS=$(echo "$BODY" | awk '/^## Blocked by/{f=1;next}/^## /{f=0}f' | grep -o '#[0-9][0-9]*' | tr -d '#' | sort -u || true)
           OPEN_REFS=""
           for ref in $NATIVE_REFS $BODY_REFS; do
@@ -128,8 +134,8 @@ jobs:
             refuse "Not running: no parseable \`Touches\` paths found. Add backticked repo-relative paths (no spaces) per .github/ISSUE_TEMPLATE/agent-task.md, then remove \`agent:blocked\` to retry."
             exit 0
           fi
-          for pr in $(gh pr list --state open --limit 100 --json number --jq '.[].number'); do
-            FILES=$(gh pr view "$pr" --json files --jq '.files[].path')
+          for pr in $(gh pr list --state open --limit 100 --json number --jq '.[].number' || true); do
+            FILES=$(gh pr view "$pr" --json files --jq '.files[].path' || true)
             HIT=$(comm -12 <(echo "$TOUCHES" | sort -u) <(echo "$FILES" | sort -u) || true)
             if [ -n "$HIT" ]; then
               gh issue edit "$ISSUE_NUMBER" --add-label "agent:blocked" || true
@@ -181,8 +187,9 @@ jobs:
                .github/ISSUE_TEMPLATE/agent-task.md). If any are missing or
                ambiguous: do NOT implement. Post a comment listing exactly what
                is missing, replace the `agent:implement` label with
-               `needs-triage`, remove `agent:in-progress` and `agent:blocked`
-               if present, and stop.
+               `needs-triage`, remove `ready-for-agent`, `agent:in-progress`,
+               and `agent:blocked` if present (stale approval must not linger
+               beside `needs-triage`), and stop.
 
             Done means ALL of these are true:
             - If a branch/PR already exists for this issue, continue it — do not

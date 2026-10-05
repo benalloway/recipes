@@ -5,6 +5,8 @@ Seven automation workflows. All agent runs use
 `OPENCODE_API_KEY` (change `model:`/`variant:` per file to diverge).
 Prompts must name `docs/agents/issue-tracker.md` as required reading before
 any skill output is trusted. Label vocabulary: `docs/agents/triage-labels.md`.
+Legacy `blocked` / `in-progress` labels are still honored by the preflight
+during transition; they retire in the Phase 5 audit (#30).
 
 | Workflow | Trigger | Does | Guards |
 |---|---|---|---|

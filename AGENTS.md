@@ -49,7 +49,7 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 
 ## Workflow — issue to merged PR (follow every step, in order)
 
-0. **Claim:** work only issues labeled `ready-for-agent`, one at a time.
+0. **Claim:** work only issues labeled `agent:implement`, one at a time.
    Comment on the issue that you're starting. Stay inside the issue body;
    scope-creep goes in a comment, not the PR. Never pull from `needs-triage`,
    `ready-for-human` (owner-only actions), or `blocked-external`.
@@ -64,7 +64,7 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 5. **Open PR:** `gh pr create --base main` with title `<type>(mN): short desc`;
    body follows `.github/PULL_REQUEST_TEMPLATE.md` (Issue `Closes #N`,
    What/Why, Verification, Human gates). Then
-   `gh pr edit --add-label ai-drafted-feedback --add-milestone <mN>`.
+   `gh pr edit --add-label agent:review --add-milestone <mN>`.
    Merge auto-closes the issue via `Closes #N` — never close issues by hand.
 6. **Review loop** (repeat until green — do not skip steps):
    - CI: `gh pr checks <N>`. `main` requires strict-green `build`, so fix
@@ -88,30 +88,30 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 
 ## Working locally (human + local agents — automation-safe)
 
-Plain comments (unless `/oc`), adding `in-progress`, and adding `blocked` do
-not start a cloud implement run. Opening a PR does start `opencode-review`,
-but not cloud implementation. Follow this protocol:
+Plain comments (unless `/oc`), adding `agent:in-progress`, and adding
+`agent:blocked` do not start a cloud implement run. Opening a PR does start
+`opencode-review`, but not cloud implementation. Follow this protocol:
 
-0. **Claim:** comment `taking this locally` on the issue and add `in-progress`.
+0. **Claim:** comment `taking this locally` on the issue and add `agent:in-progress`.
    Ensure the issue has `Blocked by` + `Touches` sections (template) so the
-   preflight can see you. Never apply `triage-requested` / `ready-for-agent`
+   preflight can see you. Never apply `triage-requested` / `agent:implement`
    for local work — those labels start cloud implement. If the issue already
-   carries `ready-for-agent`, check the Actions tab first: a running implement
+   carries `agent:implement`, check the Actions tab first: a running implement
    will NOT abort (`cancel-in-progress: false`). Only go local if no run is
-   active — then remove `ready-for-agent` to disarm it.
+   active — then remove `agent:implement` to disarm it.
 1. **Branch + build** exactly like the cloud workflow (same naming,
    `npm run check` + `npm run build`, `CHANGES.md`, PR template with
    `Closes #N`). Local superpower: you can use `npm run preview`, wrangler
    CLIs, and direct D1/R2 access — things cloud runs must not do.
 2. **Free review:** opening the PR triggers `opencode-review` automatically.
-   Want the address loop too? Add `ai-drafted-feedback` — bot review comments
+   Want the address loop too? Add `agent:review` — bot review comments
    then get auto-addressed (≤2 rounds) like any pipeline PR.
 3. **Take over a cloud PR:** work on its branch directly. To fully take over,
-   remove `ai-drafted-feedback` (stops the loop) and say so in a comment.
+   remove `agent:review` (stops the loop) and say so in a comment.
    To hand back, push, re-add the label, comment `/oc continue …`.
  4. **Your open `Closes #N` PR is a guard:** implement preflight refuses to
     start a duplicate run while it exists, and triage overlap-checks your
-    `in-progress` issue's `Touches`. Remove `in-progress` once the PR is open;
+    `agent:in-progress` issue's `Touches`. Remove `agent:in-progress` once the PR is open;
     the PR becomes the in-flight marker.
 
 ## Autonomous pipeline (no human in the loop)
@@ -120,28 +120,28 @@ Labeling an issue `triage-requested` starts automation end to end:
 
 0. `opencode-triage` adversarially reviews the spec against the
    `ready-for-agent` bar (CONTRIBUTING.md). FAIL → gaps list, back to
-   `needs-triage` (also clears `blocked`: rework moots the hold). PASS → it
-   applies `ready-for-agent`, then runs the frontier check: open `Blocked by`
-   refs, same-file overlap between the spec's `Touches` list and files changed
-   by open PRs / in-flight issues, external gates. Anything waiting → it also
-   applies `blocked` with the reason in a comment. Approval
-   (`ready-for-agent`) and hold (`blocked`) are orthogonal — never one
-   instead of the other.
-1. `opencode-implement` fires on `ready-for-agent` and on `blocked` removal.
-   Its bash preflight refuses while `blocked` is present, while any `Blocked
-   by` ref is still open, while an open PR already closes the issue, or while
-   `Touches` overlap an open PR (refusal = comment + ensure `blocked`, stop).
-   On start it adds `in-progress`; when its PR opens it removes `in-progress`
-   (the PR becomes the in-flight marker).
+   `needs-triage` (also clears `agent:blocked`: rework moots the hold). PASS → it
+   applies `ready-for-agent` + `agent:implement`, then runs the frontier check:
+   native blocked-by edges, open `Blocked by` refs, same-file overlap between
+   the spec's `Touches` list and files changed by open PRs / in-flight issues,
+   external gates. Anything waiting → it also applies `agent:blocked` with the
+   reason in a comment. Approval (`ready-for-agent`) and hold
+   (`agent:blocked`) are orthogonal — never one instead of the other.
+1. `opencode-implement` fires on `agent:implement` and on `agent:blocked`
+   removal. Its bash preflight refuses on `wayfinder:*` issues, human kills,
+   active claims, holds, open refs, duplicate PRs, and file overlap
+   (refusal = comment + ensure `agent:blocked`, stop).
+   On start it adds `agent:in-progress`; when its PR opens it removes
+   `agent:in-progress` (the PR becomes the in-flight marker).
 2. `opencode-review` auto-reviews the PR on open and on every push (ready PRs only).
 3. `opencode-address-review` fires on the bot's review comment: implements what
    it agrees with, replies `Flagging for human: <reason>` in-thread on what it
    doesn't, and adds `ready-for-human` so the loop stops for the owner.
 
 Loop guards: address runs max 2 rounds per PR (then hands to human); runs are
-skipped on PRs labeled `ready-for-human` or without `ai-drafted-feedback`;
+skipped on PRs labeled `ready-for-human` or without `agent:review`;
 human reviews never trigger auto-address. Kill switches (any one stops the
-loop): add `ready-for-human`, remove `ai-drafted-feedback`, or close the PR.
+loop): add `ready-for-human`, remove `agent:review`, or close the PR.
 Each round costs ~2 agent sessions (review + address) plus the implement run.
 
 ## Deploy policy
