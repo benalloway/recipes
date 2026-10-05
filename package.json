@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "npm run build && node scripts/patch-deploy-config.mjs && wrangler deploy -c dist/server/wrangler.json",
     "db:migrate:local": "wrangler d1 migrations apply recipes-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply recipes-db --remote",
     "db:seed:local": "node scripts/seed.mjs --local",
