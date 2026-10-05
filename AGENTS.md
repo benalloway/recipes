@@ -86,6 +86,34 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
   `blocked-external`: document it in Human gates + an issue/PR comment and
   stop. Don't guess at prod.
 
+## Working locally (human + local agents — automation-safe)
+
+The GitHub automation never fires on comments (without `/oc`), on the
+`in-progress` label, on opening a PR, or on adding `blocked` — so a local
+session cannot accidentally start a cloud run. Follow this protocol:
+
+0. **Claim:** comment `taking this locally` on the issue and add `in-progress`.
+   Ensure the issue has `Blocked by` + `Touches` sections (template) so the
+   preflight can see you. Never apply `triage-requested` / `ready-for-agent`
+   for local work — those labels start cloud implement. If the issue already
+   carries `ready-for-agent`, check the Actions tab first: a running implement
+   will NOT abort (`cancel-in-progress: false`). Only go local if no run is
+   active — then remove `ready-for-agent` to disarm it.
+1. **Branch + build** exactly like the cloud workflow (same naming,
+   `npm run check` + `npm run build`, `CHANGES.md`, PR template with
+   `Closes #N`). Local superpower: you can use `npm run preview`, wrangler
+   CLIs, and direct D1/R2 access — things cloud runs must not do.
+2. **Free review:** opening the PR triggers `opencode-review` automatically.
+   Want the address loop too? Add `ai-drafted-feedback` — bot review comments
+   then get auto-addressed (≤2 rounds) like any pipeline PR.
+3. **Take over a cloud PR:** work on its branch directly. To fully take over,
+   remove `ai-drafted-feedback` (stops the loop) and say so in a comment.
+   To hand back, push, re-add the label, comment `/oc continue …`.
+4. **Your open `Closes #N` PR is a guard:** implement preflight refuses to
+   start a duplicate run while it exists, and triage overlap-checks your
+   `in-progress` issue's `Touches`. Remove `in-progress` when the PR merges
+   (merge closes the issue anyway).
+
 ## Autonomous pipeline (no human in the loop)
 
 Labeling an issue `triage-requested` starts automation end to end:

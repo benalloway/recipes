@@ -40,6 +40,25 @@ issue returns to `needs-triage`: fix the spec, re-request triage.
 (≤2 rounds) or flags disagreements with `ready-for-human`. Follow along in
 the PR and the Actions tab. Nudge anytime with `/oc <instruction>` comments.
 
+## Work it locally instead (yours only)
+
+Nothing in the automation fires on plain comments, the `in-progress` label,
+opening a PR, or adding `blocked` — local work is safe if you claim it:
+
+0. Comment `taking this locally`, add `in-progress`, and make sure the issue
+   has `Blocked by` + `Touches` (your PR then guards the issue from
+   auto-implement). Never click `triage-requested` / `ready-for-agent` for
+   local work. If `ready-for-agent` is already on it, check Actions first —
+   a running cloud implement will not abort; only proceed if nothing runs,
+   and remove the label to disarm it.
+1. Same conventions as cloud runs (branch names, check/build, `CHANGES.md`,
+   `Closes #N`), plus local-only superpowers: `npm run preview`, wrangler
+   CLIs, direct D1/R2.
+2. Opening the PR gets you a free bot review; add `ai-drafted-feedback` to
+   also get the auto-address loop.
+3. To take over a cloud PR, work on its branch; remove `ai-drafted-feedback`
+   to stop the loop, or comment `/oc continue …` to hand back.
+
 ## Merge (yours only)
 
 Agents never merge — merging `main` deploys to production. When CI is green
