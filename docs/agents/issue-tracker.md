@@ -20,6 +20,16 @@ PLAN.md is the source of truth; milestones are never redefined without the owner
   body in a comment first, then rewrite; link siblings both ways.
 - Prefer vertical slices (tracer bullets): each ticket delivers one demoable,
   end-to-end behavior with runnable acceptance, not one horizontal layer.
+- `to-spec` publishes specs as `needs-triage` like any other ticket (overrides
+  its "apply `ready-for-agent`" step: you are hereby instructed otherwise).
+  Specs enter the same adversarial triage before anything builds them.
+- `implement` / `implement-spec` in this repo mean the AGENTS.md Workflow
+  lifecycle, not the skill's bare loop: work on a fresh `feat/*` / `fix/*`
+  branch (never the current branch, never `main`), verify with
+  `npm run check` + `npm run build`, open a PR per `.github/PULL_REQUEST_TEMPLATE.md`
+  with `Closes #N`, add the `CHANGES.md` entry when production behavior changes,
+  never merge. The skill's "commit to the current branch" and standalone
+  `/tdd`+`/code-review` closeout are subordinate to that lifecycle.
 
 ## `Blocked by` section (required on every ticket)
 
