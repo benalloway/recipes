@@ -38,8 +38,8 @@ npm run db:migrate:local    # D1 migrations to local miniflare sqlite
 npm run db:migrate:remote   # D1 migrations to production recipes-db
 ```
 
-M1 will add `migrations/0001_*.sql` and `scripts/seed.mjs` (plus
-`db:seed:local/remote` scripts). Until then, don't invent seeds.
+Seeds are static, idempotent SQL (`scripts/seed.sql`, INSERT OR IGNORE) —
+run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 
 ## Workflow (labels drive everything)
 
