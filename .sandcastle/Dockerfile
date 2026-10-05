@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git curl gnupg 
   && rm -rf /var/lib/apt/lists/*
 
 # OpenCode CLI (the agent binary Sandcastle drives inside the sandbox).
-RUN npm i -g opencode-ai
+# Pinned for reproducible images — bump deliberately, then rebuild.
+RUN npm i -g opencode-ai@1.18.34
 
 # The agent runs as root inside the container by default; repo files are
 # bind-mounted from a git worktree, so host ownership is preserved on write.
