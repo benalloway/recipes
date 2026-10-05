@@ -1,5 +1,11 @@
 # Triage Labels
 
+> **Target Sandcastle vocabulary.** This table describes where the repo is
+> going, not (yet) what the automation runs: `blocked` / `in-progress` /
+> `ai-drafted-feedback` plus `ready-for-agent`-fires-implement remain
+> authoritative until the Phase 4 preflight cutover lands. Do not apply the
+> `agent:*` execution labels expecting workflows to fire before then.
+
 Skills speak in canonical triage roles; this table maps each role to this
 repo's label string. Sandcastle-format mapping (see `mattpocock/sandcastle`
 `docs/agents/triage.md`): left column is the skills vocabulary, right column
