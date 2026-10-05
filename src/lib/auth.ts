@@ -118,7 +118,17 @@ export async function consumeMagicToken(db: Db, token: string): Promise<number |
     .prepare('SELECT user_id FROM magic_tokens WHERE token_hash = ?')
     .bind(tokenHash)
     .first<{ user_id: number }>();
-  return row ? row.user_id : null;
+  if (!row) return null;
+  // Consumed links can never verify again — remove the row outright.
+  await db.prepare('DELETE FROM magic_tokens WHERE token_hash = ?').bind(tokenHash).run();
+  return row.user_id;
+}
+
+export async function deleteMagicToken(db: Db, token: string): Promise<void> {
+  await db
+    .prepare('DELETE FROM magic_tokens WHERE token_hash = ?')
+    .bind(await sha256Hex(token))
+    .run();
 }
 
 export async function createSession(

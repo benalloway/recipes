@@ -8,6 +8,12 @@ export const POST: APIRoute = async (context) => {
   if (token) {
     await deleteSession(getDb(context.locals), token);
   }
-  context.cookies.delete(SESSION_COOKIE, { path: '/' });
+  // Mirror the creation attributes so browsers reliably clear the cookie.
+  context.cookies.delete(SESSION_COOKIE, {
+    path: '/',
+    httpOnly: true,
+    secure: context.url.protocol === 'https:',
+    sameSite: 'lax',
+  });
   return context.redirect('/login', 303);
 };

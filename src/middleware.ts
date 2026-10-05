@@ -2,7 +2,7 @@ import { defineMiddleware } from 'astro:middleware';
 import { getDb } from './lib/adapters/db';
 import { SESSION_COOKIE, loadSessionByToken } from './lib/auth';
 
-const OPEN_PATHS = new Set(['/login', '/api/health']);
+const OPEN_PATHS = new Set(['/login', '/api/health', '/favicon.ico', '/robots.txt']);
 
 export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.session = undefined;
@@ -13,8 +13,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   const { pathname } = context.url;
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   const open =
-    OPEN_PATHS.has(pathname) || pathname.startsWith('/auth/') || pathname.startsWith('/_astro/');
+    OPEN_PATHS.has(normalized) ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/_astro/');
   if (!open && !context.locals.session) {
     return context.redirect('/login', 302);
   }

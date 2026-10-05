@@ -20,11 +20,14 @@ export async function sendMail(args) {
   if (!key) {
     // Dev-only fallback (issue #5): log instead of sending so the magic-link
     // flow is testable without #6 (Resend domain/secret wiring). Production
-    // always has the secret, so real sends never take this path.
+    // always has the secret, so real sends never take this path — and the
+    // link-bearing body is only logged in dev builds, never in preview or
+    // production bundles, so a misconfigured prod can't leak live tokens
+    // into log retention.
     console.log(
       `[dev-fallback] mail NOT sent (RESEND_API_KEY unset) — to: ${args.to} — subject: ${args.subject}`,
     );
-    if (args.text) console.log(`[dev-fallback] body:\n${args.text}`);
+    if (args.text && import.meta.env.DEV) console.log(`[dev-fallback] body:\n${args.text}`);
     return { delivered: false };
   }
 

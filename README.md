@@ -31,6 +31,8 @@ Until #6 wires the Resend domain + `RESEND_API_KEY` secret, `sendMail()`
 falls back to logging the message to the server console instead of sending.
 To sign in locally: submit your email at `/login`, then copy the
 `/auth/verify?token=…` link from `npx astro dev logs` and open it.
+The link itself is logged only in dev builds (`npm run dev`), never in
+preview/production — so a missing key in prod can't leak tokens into logs.
 Production always has the secret set, so real sends never take this path.
 
 ## Portability contract

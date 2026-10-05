@@ -4,6 +4,7 @@ import { sendMail } from '../../lib/adapters/mail';
 import {
   EMAIL_RATE_LIMIT_MS,
   createMagicToken,
+  deleteMagicToken,
   getOrCreateUserId,
   isValidEmail,
   lastTokenSentAt,
@@ -12,7 +13,12 @@ import {
 
 /** Issue a magic link: validate → rate-limit (1/email/30s) → token → mail. */
 export const POST: APIRoute = async (context) => {
-  const form = await context.request.formData();
+  let form: FormData;
+  try {
+    form = await context.request.formData();
+  } catch {
+    return context.redirect('/login?error=invalid', 303);
+  }
   const email = normalizeEmail(String(form.get('email') ?? ''));
   if (!isValidEmail(email)) {
     return context.redirect('/login?error=invalid', 303);
@@ -41,6 +47,11 @@ export const POST: APIRoute = async (context) => {
     });
   } catch (err) {
     console.error('magic-link send failed', err);
+    // Don't leave a live token behind: the user gets an error page, so their
+    // immediate retry must not hit the 30s rate-limit trap.
+    await deleteMagicToken(db, token).catch((deleteErr) => {
+      console.error('magic-link token cleanup failed', deleteErr);
+    });
     return context.redirect('/login?error=email', 303);
   }
 
@@ -48,10 +59,19 @@ export const POST: APIRoute = async (context) => {
 };
 
 function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-/** Self-contained 429 page — no Tailwind dependency inside endpoint responses. */
+/**
+ * Self-contained 429 page — no Tailwind dependency inside endpoint responses.
+ * Palette duplicates `@theme` in src/styles/global.css (no new colors);
+ * keep the hexes in sync if the tokens ever change.
+ */
 function rateLimitedPage(): string {
   return `<!doctype html>
 <html lang="en">

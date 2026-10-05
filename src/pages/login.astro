@@ -1,6 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
 
+if (Astro.locals.session) {
+  return Astro.redirect('/', 302);
+}
+
 const params = Astro.url.searchParams;
 const sent = params.get('sent') === 'ok';
 const error = params.get('error');
