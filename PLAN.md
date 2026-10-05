@@ -25,6 +25,8 @@ Key decisions (confirmed with user):
 - **Domain:** `recipes.benalloway.com` (benalloway.com already on Cloudflare DNS)
 - **Design:** American Psycho business card aesthetic — bone white, hairline
   rules, Helvetica, generous whitespace, one restrained accent
+- **Recipe types:** any recipe works — desserts, dinners, breakfasts, drinks
+  (hot/iced/alcoholic). Type-agnostic model; category lives in tags only
 
 ## Architecture
 
@@ -66,6 +68,13 @@ user_recipes(user_id, recipe_id, is_favorite, added_at)           -- "user's lis
 Steps stay JSON (prose, never joined across recipes); ingredients are relational
 (the join keys for capsule meal planning).
 
+**Type-agnostic recipes (confirmed):** nothing in the model assumes food "meals"
+— any kind of recipe: desserts, dinners, breakfasts, drinks (hot, iced,
+alcoholic, coffee, tea, mocktails). No `course`/`meal_type` columns; type lives
+purely in tags. Free-form `unit` TEXT already accommodates drinks vocabulary
+(oz, dash, splash, shot). M1 tag seeds extended with: `dessert`, `lunch`,
+`snack`, `appetizer`, `drink`, `hot`, `cold`, `alcoholic`.
+
 ## Pages / routes
 
 - `/login` (Email / Phone tabs; phone disabled "soon")
@@ -88,7 +97,8 @@ Steps stay JSON (prose, never joined across recipes); ingredients are relational
 
 - **M0** — scaffold Astro+wrangler, D1 local, deploy hello-world to
   `recipes.benalloway.com`
-- **M1** — migrations + seeds (tags, ~50 common ingredients)
+- **M1** — migrations + seeds (tags incl. dessert/drink/appetizer/etc,
+  ~50 common ingredients)
 - **M2** — magic-link auth end-to-end + sessions (Resend domain setup: add
   SPF/DKIM records to Cloudflare DNS, verify `benalloway.com`, send from
   `login@benalloway.com`)
