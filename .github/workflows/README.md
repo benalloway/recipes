@@ -15,7 +15,7 @@ during transition; they retire in the Phase 5 audit (#30).
 | `opencode-implement` | issue labeled `agent:implement`, or `agent:blocked` removed | Bash preflight refuses on wayfinder label / human kill / active claim / hold / open refs (native + text) / duplicate PR / file overlap vs open PRs and in-flight issues (comment + ensure `agent:blocked`, no agent runs); else branches, implements per `AGENTS.md`, verifies, opens PR labeled `agent:review` | Issues only (no PRs); spec gate in prompt as backstop (incomplete → back to `needs-triage`); one run per issue, no cancel (concurrency) |
 | `opencode-review` | PR opened / push / reopened / ready | Posts a code review (ready PRs only, drafts skipped) | Drafts skipped; read-only (never pushes) |
 | `opencode-address-review` | Bot review comment on `agent:review` PR | Implements agreements, pushes fixes; disagreements → in-thread `Flagging for human` + `ready-for-human` | Label gates; placeholder/own-summary excluded; hard 2-round budget step; latest run wins (concurrency) |
-| `opencode-update-branch` | PR labeled `agent:update-branch` | Rebases the PR branch onto latest `main` (no merges); conflict aborts + `agent:blocked` for human | Pure bash (no agent); force-with-lease push; one run per PR (concurrency) |
+| `opencode-update-branch` | PR labeled `agent:update-branch` | Rebases the PR branch onto latest `main` (no merges); conflict aborts + `ready-for-human` for human | Pure bash (no agent); force-with-lease push; one run per PR (concurrency) |
 | `opencode` | `/oc` comment (issue/PR/review) | On-demand agent for triage, fixes, follow-ups | Mention-gated; resume path after `ready-for-human` (`/oc continue …`) |
 
 Resume after human intervention: remove `ready-for-human` and comment

@@ -2,7 +2,8 @@ name: opencode-update-branch
 
 # Stale PR branches: rebase onto latest main to preserve linear history
 # (merges into branches are forbidden). Label a PR `agent:update-branch`;
-# success removes the label, conflict applies `agent:blocked` for a human.
+# success removes the label, conflict applies `ready-for-human` (the PR-side
+# human gate — `agent:blocked` is issue-side only).
 
 on:
   pull_request_target:
@@ -10,7 +11,7 @@ on:
 
 jobs:
   update-branch:
-    if: github.event.label.name == 'agent:update-branch'
+    if: github.event.label.name == 'agent:update-branch' && github.event.pull_request.state == 'open'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
@@ -36,7 +37,7 @@ jobs:
           set -euo pipefail
           git fetch origin main:main || git fetch origin main
           git fetch origin "$BRANCH" || true
-          git checkout -B "$BRANCH" "$HEAD_SHA"
+          git checkout -B -- "$BRANCH" "$HEAD_SHA"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if git rebase main; then
