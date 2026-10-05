@@ -26,6 +26,17 @@ token reuse rejected); `curl -s https://recipes.benalloway.com/login`.
 
 Rollback: `npx wrangler rollback` (no schema change).
 
+## 2026-10-05 — Tailwind CSS v4 styling live (7dd81a5, backfill)
+
+Change: styling layer moved from hand-written custom properties to
+Tailwind CSS v4 CSS-first config (`@theme` tokens, preflight off);
+same design language, no visual change. Auto-deployed on push to main.
+
+Verify: `curl -s https://recipes.benalloway.com/` serves inline
+`tailwindcss v4.3.3` CSS with the bone/hairline/accent `--color-*` tokens.
+
+Rollback: `npx wrangler rollback` (styling-only change).
+
 ## 2026-10-05 — auto-deploy pipeline enabled (PR #10)
 
 Change: Actions deploy job now ships `main` on every merge (remote D1 migrations
