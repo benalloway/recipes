@@ -36,4 +36,4 @@ label "wayfinder:prototype" "6F42C1" "Wayfinder decision ticket: prototype (HITL
 label "wayfinder:grilling" "6F42C1" "Wayfinder decision ticket: grilling (HITL)"
 label "wayfinder:task" "6F42C1" "Wayfinder decision ticket: manual task"
 
-echo "labels reconciled: $(gh label list --json name --jq '[.[] | select(.name | IN("needs-triage","triage-requested","ready-for-agent","blocked","blocked-external","ready-for-human","in-progress","needs-info","ai-drafted-feedback","agent:implement","agent:review","agent:update-branch","agent:explore","agent:in-progress","agent:blocked","wayfinder:map","wayfinder:research","wayfinder:prototype","wayfinder:grilling","wayfinder:task"))] | length')/20 present"
+echo "labels reconciled: $(gh label list --limit 100 --json name --jq '[.[] | select(.name | IN("needs-triage","triage-requested","ready-for-agent","blocked","blocked-external","ready-for-human","in-progress","needs-info","ai-drafted-feedback","agent:implement","agent:review","agent:update-branch","agent:explore","agent:in-progress","agent:blocked","wayfinder:map","wayfinder:research","wayfinder:prototype","wayfinder:grilling","wayfinder:task"))] | length')/20 present"
