@@ -1,0 +1,81 @@
+name: opencode-address-review
+
+# Autonomous review loop: after the opencode-review bot posts its review
+# comment on an autonomous PR, an agent reads every review thread, implements
+# what it agrees with, and flags disagreements for a human.
+# Loop guards (see AGENTS.md "Autonomous pipeline"):
+# - Only runs on PRs labeled `ai-drafted-feedback` without `ready-for-human`.
+# - Ignores the action's own `[Working...]` placeholder and its own summaries.
+# - Iteration budget (2 rounds) + `ready-for-human` label stop the loop.
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  address:
+    if: |
+      github.event.issue.pull_request &&
+      github.event.comment.user.type == 'Bot' &&
+      contains(github.event.issue.labels.*.name, 'ai-drafted-feedback') &&
+      !contains(github.event.issue.labels.*.name, 'ready-for-human') &&
+      !contains(github.event.comment.body, '[Working...]') &&
+      !contains(github.event.comment.body, 'auto-address-summary')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: address-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # NOTE: credentials must persist — the agent runs git commands itself,
+          # which need auth on private repos.
+          fetch-depth: 0
+
+      - uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: opencode-go/kimi-k3
+          use_github_token: true
+          prompt: |
+            A review bot just posted on autonomous PR #${{ github.event.issue.number }}
+            (label `ai-drafted-feedback`). Your job: read the review, implement
+            what is best, flag the rest for a human. Follow AGENTS.md invariants.
+
+            0. First, check you should act at all:
+               - If the triggering comment is NOT a code review (e.g. a reply to
+                 a `/oc` command, a status note), do nothing and stop silently.
+               - If the PR now carries the `ready-for-human` label, stop.
+               - Iteration budget: count prior completed runs of workflow
+                 `opencode-address-review` on this PR's head branch:
+                 `gh run list --workflow opencode-address-review.yml --branch <head-branch> --json conclusion`.
+                 If 2 or more already completed: comment "Auto-iteration budget
+                 spent — handing to human", add the `ready-for-human` label,
+                 and stop WITHOUT pushing.
+            1. Read every unresolved review thread on the PR: all inline
+               comments (`gh api repos/benalloway/recipes/pulls/<N>/comments`),
+               all submitted reviews
+               (`gh api repos/benalloway/recipes/pulls/<N>/reviews`), and the
+               review comment bodies. Skip threads you already replied to in a
+               previous round unless new information appeared.
+            2. For each finding:
+               - Agree → implement the fix in code.
+               - Disagree → reply IN THE REVIEW THREAD (never a top-level
+                 comment): `Flagging for human: <reason>`. Then add the
+                 `ready-for-human` label to the PR so the loop stops and the
+                 owner sees it. Keep fixing the findings you agree with.
+            3. Run `npm run check` + `npm run build` green. Commit
+               (`address review: <what>`) and push to the PR branch only.
+               Never push to `main`. Never merge.
+            4. Post ONE summary as a PR comment, including the marker
+               `<!-- auto-address-summary -->` verbatim (it keeps this workflow
+               from re-triggering on your own comment). List what you fixed
+               (with commit sha) and what you flagged for a human, if anything.
+
+            Never read or echo secrets.

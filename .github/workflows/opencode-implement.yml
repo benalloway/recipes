@@ -1,0 +1,61 @@
+name: opencode-implement
+
+# Autonomous handoff: label an issue `ready-for-agent` and an agent picks it up,
+# implements it on a feature branch, verifies, and opens a PR.
+# That PR then flows into opencode-review.yml (auto review) and
+# opencode-address-review.yml (auto address). See AGENTS.md "Autonomous pipeline".
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  implement:
+    if: |
+      github.event.label.name == 'ready-for-agent' &&
+      !github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    concurrency:
+      group: implement-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # NOTE: credentials must persist — the agent runs git commands itself,
+          # which need auth on private repos.
+          fetch-depth: 0
+
+      - uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: opencode-go/kimi-k3
+          use_github_token: true
+          prompt: |
+            Implement GitHub issue #${{ github.event.issue.number }} in this repo.
+            Follow AGENTS.md exactly — stack invariants, design system, commands,
+            and the Workflow lifecycle (branch → work → verify → push → PR).
+            The Workflow section's step 7 ("you NEVER merge") applies to you too.
+
+            Done means ALL of these are true:
+            - If a branch/PR already exists for this issue, continue it — do not
+              open a duplicate. Otherwise branch from latest main:
+              `feat/mN-short-desc` or `fix/short-desc`.
+            - Change is scoped to the issue body. `npm run check` + `npm run build`
+              are green.
+            - A PR is open against `main` following .github/PULL_REQUEST_TEMPLATE.md:
+              `Closes #N`, What/Why, Verification output, Human gates,
+              labels `ai-drafted-feedback` + the issue's milestone.
+            - `CHANGES.md` entry included if production behavior changes.
+
+            If you are blocked (needs a human: secrets, dashboard/DNS action,
+            ambiguous spec, or anything matching `blocked-external`): do NOT open
+            a PR. Post your findings as an issue comment, add the
+            `ready-for-human` label, and stop.
+
+            Never push to `main`. Never merge. Never read or echo secrets.

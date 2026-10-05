@@ -84,6 +84,22 @@ run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
   `blocked-external`: document it in Human gates + an issue/PR comment and
   stop. Don't guess at prod.
 
+## Autonomous pipeline (no human in the loop)
+
+Labeling an issue `ready-for-agent` hands it to automation end to end:
+
+1. `opencode-implement` picks up the issue, works the Workflow above, opens the PR.
+2. `opencode-review` auto-reviews the PR on open and on every push (ready PRs only).
+3. `opencode-address-review` fires on the bot's review comment: implements what
+   it agrees with, replies `Flagging for human: <reason>` in-thread on what it
+   doesn't, and adds `ready-for-human` so the loop stops for the owner.
+
+Loop guards: address runs max 2 rounds per PR (then hands to human); runs are
+skipped on PRs labeled `ready-for-human` or without `ai-drafted-feedback`;
+human reviews never trigger auto-address. Kill switches (any one stops the
+loop): add `ready-for-human`, remove `ai-drafted-feedback`, or close the PR.
+Each round costs ~2 agent sessions (review + address) plus the implement run.
+
 ## Deploy policy
 
 - Merges to `main` automatically deploy to production: the Actions deploy job
