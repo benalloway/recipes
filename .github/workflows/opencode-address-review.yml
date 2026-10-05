@@ -36,7 +36,26 @@ jobs:
           # which need auth on private repos.
           fetch-depth: 0
 
+      - name: "Check iteration budget (hard cap: 2 address rounds per PR)"
+        id: budget
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=$(gh pr view ${{ github.event.issue.number }} --repo benalloway/recipes --json headRefName -q .headRefName)
+          PRIOR=$(gh run list --repo benalloway/recipes --workflow opencode-address-review.yml --branch "$BRANCH" --json conclusion -q '[.[] | select(.conclusion != null)] | length')
+          echo "head branch: $BRANCH, prior completed address runs: $PRIOR"
+          if [ "$PRIOR" -ge 2 ]; then echo "over=true" >> "$GITHUB_OUTPUT"; else echo "over=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Hand to human (budget spent)
+        if: steps.budget.outputs.over == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.issue.number }} --repo benalloway/recipes --body "Auto-iteration budget spent (2 address rounds) — handing to human. <!-- auto-address-summary -->"
+          gh pr edit ${{ github.event.issue.number }} --repo benalloway/recipes --add-label ready-for-human
+
       - uses: anomalyco/opencode/github@latest
+        if: steps.budget.outputs.over != 'true'
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -53,12 +72,8 @@ jobs:
                - If the triggering comment is NOT a code review (e.g. a reply to
                  a `/oc` command, a status note), do nothing and stop silently.
                - If the PR now carries the `ready-for-human` label, stop.
-               - Iteration budget: count prior completed runs of workflow
-                 `opencode-address-review` on this PR's head branch:
-                 `gh run list --workflow opencode-address-review.yml --branch <head-branch> --json conclusion`.
-                 If 2 or more already completed: comment "Auto-iteration budget
-                 spent — handing to human", add the `ready-for-human` label,
-                 and stop WITHOUT pushing.
+               - Iteration budget is enforced by the workflow before you run; if
+                 you are reading this, rounds remain.
             1. Read every unresolved review thread on the PR: all inline
                comments (`gh api repos/benalloway/recipes/pulls/<N>/comments`),
                all submitted reviews
@@ -71,7 +86,9 @@ jobs:
                  comment): `Flagging for human: <reason>`. Then add the
                  `ready-for-human` label to the PR so the loop stops and the
                  owner sees it. Keep fixing the findings you agree with.
-            3. Run `npm run check` + `npm run build` green. Commit
+            3. Run `npm run check` + `npm run build` green. Also read
+               `gh pr checks <N>` and fix any red CI, even if unrelated to the
+               review threads — a green build is required. Commit
                (`address review: <what>`) and push to the PR branch only.
                Never push to `main`. Never merge.
             4. Post ONE summary as a PR comment, including the marker

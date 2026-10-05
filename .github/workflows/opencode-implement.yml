@@ -43,6 +43,13 @@ jobs:
             and the Workflow lifecycle (branch → work → verify → push → PR).
             The Workflow section's step 7 ("you NEVER merge") applies to you too.
 
+            0. Spec gate first: the issue must have a clear Goal, executable
+               Tasks, and verifiable Acceptance (see
+               .github/ISSUE_TEMPLATE/agent-task.md). If any are missing or
+               ambiguous: do NOT implement. Post a comment listing exactly what
+               is missing, replace the `ready-for-agent` label with
+               `needs-triage`, and stop.
+
             Done means ALL of these are true:
             - If a branch/PR already exists for this issue, continue it — do not
               open a duplicate. Otherwise branch from latest main:

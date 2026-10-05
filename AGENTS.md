@@ -9,6 +9,8 @@ reviewable PR without hand-holding. Non-negotiable rules first, context after.
   milestone definitions without discussing with the owner.
 - GitHub issues are the unit of work: **one issue → one branch → one PR.**
   Never bundle unrelated issues.
+- `CONTRIBUTING.md` — human-side flow (idea → triage → merge) and the
+  `ready-for-agent` triage bar. `.github/workflows/README.md` — workflow map.
 
 ## Stack invariants (do not violate)
 
