@@ -1,10 +1,33 @@
 ---
 import Base from '../layouts/Base.astro';
+
+const session = Astro.locals.session;
 ---
 
 <Base title="Home">
-  <main>
-    <h1>Recipes</h1>
-    <p>Scaffold alive. D1 + R2 adapters wired. Deployed at recipes.benalloway.com.</p>
+  <main class="mx-auto max-w-xl px-6 py-16">
+    {
+      session && (
+        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+          Signed in as {session.email}
+        </p>
+      )
+    }
+    <h1 class="mt-4 text-2xl font-light tracking-tight">Recipes</h1>
+    <p class="mt-2 text-ink">
+      Scaffold alive. D1 + R2 adapters wired. Deployed at recipes.benalloway.com.
+    </p>
+    {
+      session && (
+        <form method="post" action="/auth/logout" class="mt-8 border-t border-hairline pt-4">
+          <button
+            type="submit"
+            class="cursor-pointer border-0 bg-transparent p-0 font-sans text-xs uppercase tracking-[0.2em] text-accent"
+          >
+            Log out
+          </button>
+        </form>
+      )
+    }
   </main>
 </Base>

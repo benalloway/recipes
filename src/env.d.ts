@@ -8,19 +8,20 @@ type RuntimeBindings = {
   AI_IMPORT_ENABLED?: string;
 };
 
+type SessionInfo = {
+  sessionId: number;
+  userId: number;
+  email: string;
+};
+
 declare namespace App {
   interface Locals {
     runtime: RuntimeBindings | undefined;
     cfContext: ExecutionContext;
+    session: SessionInfo | undefined;
   }
 }
 
 declare module 'cloudflare:workers' {
   export const env: RuntimeBindings & Record<string, unknown>;
-}
-
-declare namespace App {
-  interface Locals {
-    runtime: RuntimeBindings | undefined;
-  }
 }

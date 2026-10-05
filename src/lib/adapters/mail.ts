@@ -13,13 +13,22 @@ const FROM = 'login@benalloway.com';
 
 /**
  * @param {{ to: string; subject: string; html: string; text?: string }} args
+ * @returns {Promise<{ delivered: boolean }>}
  */
 export async function sendMail(args) {
   const key = env.RESEND_API_KEY;
   if (!key) {
-    throw new Error(
-      'RESEND_API_KEY not configured — `wrangler secret put RESEND_API_KEY` (prod) or .dev.vars (local)',
+    // Dev-only fallback (issue #5): log instead of sending so the magic-link
+    // flow is testable without #6 (Resend domain/secret wiring). Production
+    // always has the secret, so real sends never take this path — and the
+    // link-bearing body is only logged in dev builds, never in preview or
+    // production bundles, so a misconfigured prod can't leak live tokens
+    // into log retention.
+    console.log(
+      `[dev-fallback] mail NOT sent (RESEND_API_KEY unset) — to: ${args.to} — subject: ${args.subject}`,
     );
+    if (args.text && import.meta.env.DEV) console.log(`[dev-fallback] body:\n${args.text}`);
+    return { delivered: false };
   }
 
   const res = await fetch('https://api.resend.com/emails', {
@@ -41,4 +50,6 @@ export async function sendMail(args) {
     const body = await res.text();
     throw new Error(`Resend send failed (${res.status}): ${body}`);
   }
+
+  return { delivered: true };
 }
