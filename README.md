@@ -25,6 +25,14 @@ npm run db:seed:remote      # idempotent seed — production
 Secrets: copy `.dev.vars.example` → `.dev.vars` (gitignored) for local dev;
 production secrets via `wrangler secret put RESEND_API_KEY`.
 
+## Auth dev flow (magic links without Resend)
+
+Until #6 wires the Resend domain + `RESEND_API_KEY` secret, `sendMail()`
+falls back to logging the message to the server console instead of sending.
+To sign in locally: submit your email at `/login`, then copy the
+`/auth/verify?token=…` link from `npx astro dev logs` and open it.
+Production always has the secret set, so real sends never take this path.
+
 ## Portability contract
 
 All Cloudflare glue lives in `src/lib/runtime.ts` + `src/lib/adapters/*`
