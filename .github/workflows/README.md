@@ -1,6 +1,6 @@
 # Workflows
 
-Five automation workflows. All agent runs use
+Six automation workflows. All agent runs use
 `opencode/muse-spark-1.3-contributor-free` at max variant via
 `OPENCODE_API_KEY` (change `model:`/`variant:` per file to diverge).
 

@@ -47,11 +47,19 @@ and threads are resolved, review and merge the PR yourself. It auto-closes
 its issue via `Closes #N`. Then verify live (`CHANGES.md` top entry tells
 you what to check).
 
-## Stop the loop
+## Unblock / stop the loop (yours only)
 
-Any one of these halts automation: add `ready-for-human`, remove
-`ai-drafted-feedback`, or close the PR. Budget roughly ~4 agent sessions
-per issue (implement + review + up to 2× address).
+- **Blocked issue:** read the `blocked` comment for the reason (open `Blocked
+  by` ref, file conflict, external gate, failed run). Fix the cause, then
+  remove the `blocked` label — implement re-fires automatically if
+  `ready-for-agent` is still applied. Never remove `blocked` to "see what
+  happens"; the preflight will just re-apply it with another comment.
+- **Stop automation** on any issue/PR (any one works): add `ready-for-human`,
+  remove `ai-drafted-feedback`, or close the PR/issue.
+- **Resume after you intervened:** remove `ready-for-human` and comment
+  `/oc continue …` (see `.github/workflows/README.md`).
+- **Budget:** roughly ~4 agent sessions per issue (implement + review + up to
+  2× address). If a loop keeps cycling, stop it and re-scope the issue.
 
 Workflow details: [`AGENTS.md`](./AGENTS.md) (agent protocol) and
 [`.github/workflows/README.md`](./.github/workflows/README.md) (trigger map).
