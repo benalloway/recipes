@@ -11,7 +11,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply recipes-db --remote",
     "check": "astro sync && tsc --noEmit",
     "db:seed:local": "wrangler d1 execute recipes-db --local --file scripts/seed.sql",
-    "db:seed:remote": "wrangler d1 execute recipes-db --remote --file scripts/seed.sql -y"
+    "db:seed:remote": "wrangler d1 execute recipes-db --remote --file scripts/seed.sql"
   },
   "repository": {
     "type": "git",
