@@ -18,7 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          persist-credentials: false
+          # NOTE: credentials must persist — the review action runs
+          # `git fetch origin` itself, which needs auth on private repos.
           fetch-depth: 1
 
       - uses: anomalyco/opencode/github@latest
