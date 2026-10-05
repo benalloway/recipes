@@ -10,6 +10,7 @@
     "db:migrate:local": "wrangler d1 migrations apply recipes-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply recipes-db --remote",
     "check": "astro sync && tsc --noEmit",
+    "agent:local": "tsx --env-file=.sandcastle/.env .sandcastle/run.ts",
     "db:seed:local": "wrangler d1 execute recipes-db --local --file scripts/seed.sql",
     "db:seed:remote": "wrangler d1 execute recipes-db --remote --file scripts/seed.sql"
   },
@@ -32,7 +33,9 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@ai-hero/sandcastle": "^0.12.0",
     "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
     "typescript": "7.0.2",
     "wrangler": "^4.147.0"
   }
