@@ -1,7 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
+import RecipeCard from '../components/RecipeCard.astro';
+import { getDb } from '../lib/adapters/db';
+import { getDashboard } from '../lib/recipes';
 
 const session = Astro.locals.session;
+const cards = session ? await getDashboard(getDb(Astro.locals), session.userId) : [];
 ---
 
 <Base title="Home">
@@ -14,9 +18,20 @@ const session = Astro.locals.session;
       )
     }
     <h1 class="mt-4 text-2xl font-light tracking-tight">Recipes</h1>
-    <p class="mt-2 text-ink">
-      Scaffold alive. D1 + R2 adapters wired. Deployed at recipes.benalloway.com.
-    </p>
+    {
+      cards.length > 0 ? (
+        <div class="mt-8 grid gap-6">
+          {cards.map((card) => (
+            <RecipeCard card={card} />
+          ))}
+        </div>
+      ) : (
+        <div class="mt-8">
+          <p class="text-ink">No recipes yet.</p>
+          <p class="mt-2 text-muted">Add your first recipe at /recipes/new (arriving in #14).</p>
+        </div>
+      )
+    }
     {
       session && (
         <form method="post" action="/auth/logout" class="mt-8 border-t border-hairline pt-4">

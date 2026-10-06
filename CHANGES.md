@@ -12,6 +12,22 @@ would ever need undoing.
 
 ---
 
+## Unreleased — M3 slice 1: recipe library reads (issue #13)
+
+Change: signed-in library reads — dashboard grid (`/`), detail
+(`/recipes/[id]`, JSON-LD included), tag pages (`/tags/[slug]`),
+favorites (`/favorites`), favorite toggle (`POST /recipes/[id]/favorite`,
+303 back to same-origin referer). Ownership enforced in
+`src/lib/recipes.ts`: non-owned / missing / deleted all read as 404.
+No migrations (reads over the M1 schema).
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e via
+`npm run preview` (logged-out 302s, 2-card dashboard, favorites filter,
+detail fields + JSON-LD, 404s for unknown tag/id and non-owner,
+toggle 1→0 with 303s, POST to unknown id 404s).
+
+Rollback: `npx wrangler rollback` (no schema change).
+
 ## 2026-10-05 — M2: magic-link auth + sessions live (PR #11)
 
 Change: email magic-link login end-to-end — session middleware gates all

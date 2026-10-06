@@ -1,0 +1,85 @@
+---
+import Base from '../../layouts/Base.astro';
+import TagChip from '../../components/TagChip.astro';
+import { getDb } from '../../lib/adapters/db';
+import { formatIngredient, formatQuantity, getRecipeDetail } from '../../lib/recipes';
+
+const session = Astro.locals.session;
+const id = Number(Astro.params.id);
+const detail = session ? await getRecipeDetail(getDb(Astro.locals), id, session.userId) : null;
+if (!detail) {
+  Astro.response.status = 404;
+}
+
+const jsonLd = detail
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Recipe',
+      name: detail.title,
+      recipeIngredient: detail.ingredients.map(formatIngredient),
+      recipeInstructions: detail.instructions.map((text) => ({ '@type': 'HowToStep', text })),
+      ...(detail.imageKey ? { image: `/media/${detail.imageKey}` } : {}),
+      ...(detail.servings !== null ? { recipeYield: formatQuantity(detail.servings) } : {}),
+    }
+  : null;
+---
+
+{
+  detail ? (
+    <Base title={detail.title}>
+      <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+      <main class="mx-auto max-w-xl px-6 py-16">
+        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+          <a href="/" class="text-accent">
+            ← Recipes
+          </a>
+        </p>
+        <h1 class="mt-4 text-2xl font-light tracking-tight">{detail.title}</h1>
+        {detail.servings !== null && <p class="mt-2 text-muted">Serves {formatQuantity(detail.servings)}</p>}
+        {detail.imageKey && <img src={`/media/${detail.imageKey}`} alt="" class="mt-6 block w-full" />}
+        <h2 class="mt-8 text-xs font-medium uppercase tracking-[0.2em] text-muted">Ingredients</h2>
+        <ul class="mt-2">
+          {detail.ingredients.map((ingredient) => (
+            <li class="mt-1 text-ink">{formatIngredient(ingredient)}</li>
+          ))}
+        </ul>
+        <h2 class="mt-8 text-xs font-medium uppercase tracking-[0.2em] text-muted">Steps</h2>
+        <ol class="mt-2 list-decimal pl-6">
+          {detail.instructions.map((step) => (
+            <li class="mt-1 text-ink">{step}</li>
+          ))}
+        </ol>
+        {detail.tags.length > 0 && (
+          <p class="mt-8 flex flex-wrap gap-x-4 gap-y-1">
+            {detail.tags.map((tag) => (
+              <TagChip name={tag.name} slug={tag.slug} />
+            ))}
+          </p>
+        )}
+        <form method="post" action={`/recipes/${detail.id}/favorite`} class="mt-6">
+          <button
+            type="submit"
+            aria-pressed={detail.isFavorite ? 'true' : 'false'}
+            aria-label={detail.isFavorite ? 'Remove from favorites' : 'Save to favorites'}
+            class="cursor-pointer border border-hairline bg-surface px-4 py-2 font-sans text-xs uppercase tracking-[0.2em] text-accent"
+          >
+            {detail.isFavorite ? '★ Saved' : '☆ Save to favorites'}
+          </button>
+        </form>
+      </main>
+    </Base>
+  ) : (
+    <Base title="Not found">
+      <main class="mx-auto max-w-xl px-6 py-16">
+        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">404 — Not found</p>
+        <h1 class="mt-4 text-2xl font-light tracking-tight">Not found</h1>
+        <p class="mt-2 text-ink">That recipe does not exist, was deleted, or belongs to someone else.</p>
+        <p class="mt-4">
+          <a href="/" class="text-xs uppercase tracking-[0.2em] text-accent">
+            ← Back to recipes
+          </a>
+        </p>
+      </main>
+    </Base>
+  )
+}
