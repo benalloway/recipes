@@ -1,20 +1,13 @@
 /**
  * Ingredient-rows island (plain TS, no framework).
  *
- * Any `[data-ingredient-rows]` container opts in. Add/remove controls
- * render `hidden` so the no-JS fallback posts the server-rendered rows
- * untouched; this island unhides them and wires:
- * - `[data-add-row]` clones the `<template data-row-template>` blank,
- *   stamping `__INDEX__` (0-based field names) and `__N__` (1-based
- *   labels) with the next index. The parser reads indexes `0..49`
- *   (`MAX_INGREDIENT_ROWS`), so appended rows submit like server rows.
- * - `[data-remove-row]` removes its own `[data-ingredient-row]`; the
- *   last remaining row is cleared instead, so the form always posts
- *   ingredient fields. Gaps in the numbering are fine — the parser
- *   skips fully-blank indexes.
- *
- * Include once per page with:
- * `<script>import "./ingredient-rows.ts";</script>`.
+ * Controls render `hidden` so the no-JS fallback posts server rows
+ * untouched; this island reveals them and wires add/remove:
+ * - `[data-add-row]` stamps a `<template data-row-template>` blank with
+ *   the next index (`__INDEX__` field names, `__N__` labels). The parser
+ *   reads `0..49`, so appended rows submit like server rows.
+ * - `[data-remove-row]` removes its row; the last row is cleared instead
+ *   so ingredient fields always post. Numbering gaps are fine.
  */
 
 import { MAX_INGREDIENT_ROWS } from '../lib/recipes';
@@ -29,16 +22,18 @@ if (container && template && addButton) {
     control.removeAttribute('hidden');
   }
 
-  let next = Number(container.dataset.nextIndex ?? '0');
-  if (!Number.isFinite(next) || next < 0) next = 0;
+  let nextIndex = Number(container.dataset.nextIndex ?? '0');
+  if (!Number.isFinite(nextIndex) || nextIndex < 0) nextIndex = 0;
 
   addButton.addEventListener('click', () => {
-    if (next >= MAX_INGREDIENT_ROWS) return;
-    const html = template.innerHTML.replaceAll('__INDEX__', String(next)).replaceAll('__N__', String(next + 1));
+    if (nextIndex >= MAX_INGREDIENT_ROWS) return;
+    const html = template.innerHTML
+      .replaceAll('__INDEX__', String(nextIndex))
+      .replaceAll('__N__', String(nextIndex + 1));
     container.insertAdjacentHTML('beforeend', html);
-    next += 1;
-    container.dataset.nextIndex = String(next);
-    if (next >= MAX_INGREDIENT_ROWS) addButton.setAttribute('disabled', '');
+    nextIndex += 1;
+    container.dataset.nextIndex = String(nextIndex);
+    if (nextIndex >= MAX_INGREDIENT_ROWS) addButton.setAttribute('disabled', '');
   });
 
   container.addEventListener('click', (event) => {

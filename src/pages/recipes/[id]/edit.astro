@@ -5,13 +5,12 @@ import { getBlobs } from '../../../lib/adapters/blobs';
 import { getDb } from '../../../lib/adapters/db';
 import { readImageUpload, storeRecipeImage } from '../../../lib/images';
 import {
-  fieldForErrorCode,
-  FORM_ERROR_MESSAGES,
-  padIngredientRows,
-  snapshotRecipeForm,
+  formStateForError,
+  parseLinkedError,
+  snapshotForRerender,
   valuesFromDetail,
   type FormErrorCode,
-  type RecipeFormField,
+  type RecipeFormState,
   type RecipeFormValues,
 } from '../../../lib/recipe-form';
 import {
@@ -33,23 +32,9 @@ const id = Number(rawId);
 let postNotFound = false;
 
 // Submitted values to re-render when validation fails (422, nothing wiped).
-let failed: { values: RecipeFormValues; fieldErrors: Partial<Record<RecipeFormField, string>>; summary: string } | null =
-  null;
+let failed: RecipeFormState | null = null;
 // Deep-linkable `?error=` code for GETs (fresh POST failures take precedence).
 let linkedError: FormErrorCode | null = null;
-
-function toState(
-  values: RecipeFormValues,
-  code: FormErrorCode,
-): {
-  values: RecipeFormValues;
-  fieldErrors: Partial<Record<RecipeFormField, string>>;
-  summary: string;
-} {
-  const message = FORM_ERROR_MESSAGES[code];
-  const field = fieldForErrorCode(code);
-  return { values, fieldErrors: field ? { [field]: message } : {}, summary: message };
-}
 
 if (Astro.request.method === 'POST') {
   let form: FormData;
@@ -81,18 +66,13 @@ if (Astro.request.method === 'POST') {
     if (err instanceof RecipeValidationError) {
       // Re-render with everything typed intact + an inline error (422).
       Astro.response.status = 422;
-      const values = snapshotRecipeForm(form);
-      values.ingredients = padIngredientRows(values.ingredients, INGREDIENT_FORM_ROWS);
-      failed = toState(values, err.code);
+      failed = formStateForError(snapshotForRerender(form, INGREDIENT_FORM_ROWS), err.code);
     } else {
       throw err;
     }
   }
 } else {
-  const error = Astro.url.searchParams.get('error') as FormErrorCode | null;
-  if (error && FORM_ERROR_MESSAGES[error]) {
-    linkedError = error;
-  }
+  linkedError = parseLinkedError(Astro.url.searchParams.get('error'));
 }
 
 const detail = postNotFound ? null : await getRecipeDetail(db, id, session.userId);
@@ -109,15 +89,13 @@ const allTags =
     []);
 
 // Fresh POST failure wins; otherwise the head version; otherwise the linked code.
-const values: RecipeFormValues | null =
-  failed?.values ?? (detail ? valuesFromDetail(detail) : null);
-let fieldErrors: Partial<Record<RecipeFormField, string>> = failed?.fieldErrors ?? {};
+const values: RecipeFormValues | null = failed?.values ?? (detail ? valuesFromDetail(detail) : null);
+let fieldErrors: RecipeFormState['fieldErrors'] = failed?.fieldErrors ?? {};
 let summaryError: string | null = failed?.summary ?? null;
-if (!failed && linkedError && detail) {
-  const message = FORM_ERROR_MESSAGES[linkedError];
-  const field = fieldForErrorCode(linkedError);
-  summaryError = message;
-  fieldErrors = field ? { [field]: message } : {};
+if (!failed && linkedError && values) {
+  const linked = formStateForError(values, linkedError);
+  fieldErrors = linked.fieldErrors;
+  summaryError = linked.summary;
 }
 ---
 

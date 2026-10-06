@@ -22,17 +22,25 @@ interface Props {
   imageReplace: boolean;
 }
 
-const { action, submitLabel, values, fieldErrors, summaryError, allTags, canonicalIngredients, imageReplace } =
-  Astro.props;
+const {
+  action,
+  submitLabel,
+  values,
+  fieldErrors,
+  summaryError,
+  allTags,
+  canonicalIngredients,
+  imageReplace,
+} = Astro.props;
 
 const checkedSlugs = new Set(values.tagSlugs);
 
-const textInput =
+const textInputClass =
   'mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent';
-const rowInput =
+const rowInputClass =
   'w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent';
-const label = 'text-[10px] font-medium uppercase tracking-[0.28em] text-muted';
-const fieldError = 'mt-1 text-sm text-accent';
+const labelClass = 'text-[10px] font-medium uppercase tracking-[0.28em] text-muted';
+const errorClass = 'mt-1 text-sm text-accent';
 
 function describedBy(field: RecipeFormField): string | undefined {
   return fieldErrors[field] ? `${field}-error` : undefined;
@@ -48,7 +56,7 @@ function describedBy(field: RecipeFormField): string | undefined {
 }
 
 <form method="post" action={action} enctype="multipart/form-data" class="mt-8">
-  <label for="title" class={label}>Title</label>
+  <label for="title" class={labelClass}>Title</label>
   <input
     id="title"
     name="title"
@@ -59,11 +67,11 @@ function describedBy(field: RecipeFormField): string | undefined {
     value={values.title}
     aria-invalid={fieldErrors.title ? 'true' : undefined}
     aria-describedby={describedBy('title')}
-    class={textInput}
+    class={textInputClass}
   />
-  {fieldErrors.title && <p id="title-error" class={fieldError}>{fieldErrors.title}</p>}
+  {fieldErrors.title && <p id="title-error" class={errorClass}>{fieldErrors.title}</p>}
 
-  <label for="servings" class={`mt-8 block ${label}`}>Servings (blank for none)</label>
+  <label for="servings" class={`mt-8 block ${labelClass}`}>Servings (blank for none)</label>
   <input
     id="servings"
     name="servings"
@@ -73,11 +81,11 @@ function describedBy(field: RecipeFormField): string | undefined {
     value={values.servings}
     aria-invalid={fieldErrors.servings ? 'true' : undefined}
     aria-describedby={describedBy('servings')}
-    class={textInput}
+    class={textInputClass}
   />
-  {fieldErrors.servings && <p id="servings-error" class={fieldError}>{fieldErrors.servings}</p>}
+  {fieldErrors.servings && <p id="servings-error" class={errorClass}>{fieldErrors.servings}</p>}
 
-  <label for="instructions" class={`mt-8 block ${label}`}>Instructions (one step per line)</label>
+  <label for="instructions" class={`mt-8 block ${labelClass}`}>Instructions (one step per line)</label>
   <textarea
     id="instructions"
     name="instructions"
@@ -88,10 +96,10 @@ function describedBy(field: RecipeFormField): string | undefined {
     aria-describedby={describedBy('instructions')}
     class="mt-2 w-full border border-hairline bg-transparent px-4 py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
   >{values.instructions}</textarea>
-  {fieldErrors.instructions && <p id="instructions-error" class={fieldError}>{fieldErrors.instructions}</p>}
+  {fieldErrors.instructions && <p id="instructions-error" class={errorClass}>{fieldErrors.instructions}</p>}
 
-  <h2 class={`mt-8 ${label}`}>Ingredients</h2>
-  {fieldErrors.ingredients && <p id="ingredients-error" class={fieldError}>{fieldErrors.ingredients}</p>}
+  <h2 class={`mt-8 ${labelClass}`}>Ingredients</h2>
+  {fieldErrors.ingredients && <p id="ingredients-error" class={errorClass}>{fieldErrors.ingredients}</p>}
   <datalist id="canonical-ingredients">
     {canonicalIngredients.map((name) => (
       <option value={name} />
@@ -108,7 +116,7 @@ function describedBy(field: RecipeFormField): string | undefined {
           placeholder="Ingredient"
           aria-label={`Ingredient ${i + 1} name`}
           value={row.name}
-          class={`col-span-2 ${rowInput}`}
+          class={`col-span-2 ${rowInputClass}`}
         />
         <input
           name={`ing-qty-${i}`}
@@ -117,7 +125,7 @@ function describedBy(field: RecipeFormField): string | undefined {
           placeholder="Qty"
           aria-label={`Ingredient ${i + 1} quantity`}
           value={row.qty}
-          class={rowInput}
+          class={rowInputClass}
         />
         <input
           name={`ing-unit-${i}`}
@@ -126,7 +134,7 @@ function describedBy(field: RecipeFormField): string | undefined {
           placeholder="Unit"
           aria-label={`Ingredient ${i + 1} unit`}
           value={row.unit}
-          class={rowInput}
+          class={rowInputClass}
         />
         <input
           name={`ing-note-${i}`}
@@ -135,7 +143,7 @@ function describedBy(field: RecipeFormField): string | undefined {
           placeholder="Note (optional)"
           aria-label={`Ingredient ${i + 1} note`}
           value={row.note}
-          class={`col-span-2 ${rowInput}`}
+          class={`col-span-2 ${rowInputClass}`}
         />
         <button
           type="button"
@@ -165,7 +173,7 @@ function describedBy(field: RecipeFormField): string | undefined {
         list="canonical-ingredients"
         placeholder="Ingredient"
         aria-label="Ingredient __N__ name"
-        class={`col-span-2 ${rowInput}`}
+        class={`col-span-2 ${rowInputClass}`}
       />
       <input
         name="ing-qty-__INDEX__"
@@ -173,7 +181,7 @@ function describedBy(field: RecipeFormField): string | undefined {
         inputmode="decimal"
         placeholder="Qty"
         aria-label="Ingredient __N__ quantity"
-        class={rowInput}
+        class={rowInputClass}
       />
       <input
         name="ing-unit-__INDEX__"
@@ -181,7 +189,7 @@ function describedBy(field: RecipeFormField): string | undefined {
         maxlength="20"
         placeholder="Unit"
         aria-label="Ingredient __N__ unit"
-        class={rowInput}
+        class={rowInputClass}
       />
       <input
         name="ing-note-__INDEX__"
@@ -189,7 +197,7 @@ function describedBy(field: RecipeFormField): string | undefined {
         maxlength="200"
         placeholder="Note (optional)"
         aria-label="Ingredient __N__ note"
-        class={`col-span-2 ${rowInput}`}
+        class={`col-span-2 ${rowInputClass}`}
       />
       <button
         type="button"
@@ -201,7 +209,7 @@ function describedBy(field: RecipeFormField): string | undefined {
     </div>
   </template>
 
-  <h2 class={`mt-8 ${label}`}>Tags</h2>
+  <h2 class={`mt-8 ${labelClass}`}>Tags</h2>
   <div class="mt-4 grid grid-cols-2 gap-2">
     {allTags.map((tag) => (
       <label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
@@ -213,7 +221,7 @@ function describedBy(field: RecipeFormField): string | undefined {
   <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
 
   <ImageField replace={imageReplace} />
-  {fieldErrors.image && <p id="image-error" class={fieldError}>{fieldErrors.image}</p>}
+  {fieldErrors.image && <p id="image-error" class={errorClass}>{fieldErrors.image}</p>}
 
   <div class="sticky bottom-0 -mx-6 mt-8 border-t border-hairline bg-bg px-6 py-3">
     <button

@@ -6,10 +6,9 @@ import { getDb } from '../../lib/adapters/db';
 import { readImageUpload, storeRecipeImage } from '../../lib/images';
 import {
   blankRecipeFormValues,
-  fieldForErrorCode,
-  FORM_ERROR_MESSAGES,
-  padIngredientRows,
-  snapshotRecipeForm,
+  formStateForError,
+  parseLinkedError,
+  snapshotForRerender,
   type FormErrorCode,
   type RecipeFormField,
   type RecipeFormValues,
@@ -27,11 +26,11 @@ let values: RecipeFormValues = blankRecipeFormValues();
 let fieldErrors: Partial<Record<RecipeFormField, string>> = {};
 let summaryError: string | null = null;
 
-function applyError(code: FormErrorCode): void {
-  const message = FORM_ERROR_MESSAGES[code];
-  const field = fieldForErrorCode(code);
-  summaryError = message;
-  fieldErrors = field ? { [field]: message } : {};
+function showError(nextValues: RecipeFormValues, code: FormErrorCode): void {
+  const state = formStateForError(nextValues, code);
+  values = state.values;
+  fieldErrors = state.fieldErrors;
+  summaryError = state.summary;
 }
 
 if (Astro.request.method === 'POST') {
@@ -59,18 +58,16 @@ if (Astro.request.method === 'POST') {
     if (err instanceof RecipeValidationError) {
       // Re-render with everything typed intact + an inline error (422).
       Astro.response.status = 422;
-      values = snapshotRecipeForm(form);
-      values.ingredients = padIngredientRows(values.ingredients, INGREDIENT_FORM_ROWS);
-      applyError(err.code);
+      showError(snapshotForRerender(form, INGREDIENT_FORM_ROWS), err.code);
     } else {
       throw err;
     }
   }
 } else {
   // Deep-linkable `?error=` codes (validation copy lives in one place).
-  const error = Astro.url.searchParams.get('error') as FormErrorCode | null;
-  if (error && FORM_ERROR_MESSAGES[error]) {
-    applyError(error);
+  const linkedError = parseLinkedError(Astro.url.searchParams.get('error'));
+  if (linkedError) {
+    showError(values, linkedError);
   }
 }
 

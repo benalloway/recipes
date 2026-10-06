@@ -6,8 +6,9 @@
  * imports) so both pages stay thin:
  * - `snapshotRecipeForm` keeps the raw submitted strings when validation
  *   fails, so the re-render echoes exactly what was typed;
- * - `fieldForErrorCode` / `FORM_ERROR_MESSAGES` map a
+ * - `formStateForError` / `fieldForErrorCode` / `FORM_ERROR_MESSAGES` map a
  *   `RecipeValidationError` code to the field that owns it;
+ * - `parseLinkedError` reads deep-linkable `?error=` codes;
  * - `blankRecipeFormValues` / `valuesFromDetail` build the GET defaults.
  */
 
@@ -43,6 +44,16 @@ export interface RecipeFormValues {
 /** Error codes the forms render: validation codes plus the `?error=` fallback. */
 export type FormErrorCode = RecipeValidationErrorCode | 'unknown';
 
+/** Shared render state for both forms: values plus inline + summary errors. */
+export interface RecipeFormState {
+  values: RecipeFormValues;
+  fieldErrors: Partial<Record<RecipeFormField, string>>;
+  summary: string;
+}
+
+/** Blank rows appended on the edit GET so additions need no island. */
+const EDIT_BLANK_ROWS = 4;
+
 /**
  * Single error vocabulary for both forms. Field copy lives with the
  * field; image copy stays canonical in `images.ts` (`?error=` deep links
@@ -73,14 +84,29 @@ export function fieldForErrorCode(code: FormErrorCode): RecipeFormField | null {
   }
 }
 
+/** Bundle values with the message for `code` (field + summary share it). */
+export function formStateForError(values: RecipeFormValues, code: FormErrorCode): RecipeFormState {
+  const message = FORM_ERROR_MESSAGES[code];
+  const field = fieldForErrorCode(code);
+  return { values, fieldErrors: field ? { [field]: message } : {}, summary: message };
+}
+
+/** Parse a deep-linkable `?error=` value; unknown strings read as absent. */
+export function parseLinkedError(value: string | null): FormErrorCode | null {
+  if (value !== null && value in FORM_ERROR_MESSAGES) {
+    return value as FormErrorCode;
+  }
+  return null;
+}
+
 export function blankIngredientRow(): IngredientRowValues {
   return { name: '', qty: '', unit: '', note: '' };
 }
 
-/** Pad rows with blanks up to `min` (capped at what the parser reads). */
-export function padIngredientRows(rows: IngredientRowValues[], min: number): IngredientRowValues[] {
+/** Pad rows with blanks up to `minimum` (capped at what the parser reads). */
+export function padIngredientRows(rows: IngredientRowValues[], minimum: number): IngredientRowValues[] {
   const out = [...rows];
-  while (out.length < Math.min(min, MAX_INGREDIENT_ROWS)) {
+  while (out.length < Math.min(minimum, MAX_INGREDIENT_ROWS)) {
     out.push(blankIngredientRow());
   }
   return out;
@@ -105,7 +131,7 @@ export function valuesFromDetail(detail: RecipeDetail): RecipeFormValues {
     unit: ingredient.unit ?? '',
     note: ingredient.note ?? '',
   }));
-  const blankCount = Math.max(0, Math.min(4, MAX_INGREDIENT_ROWS - rows.length));
+  const blankCount = Math.max(0, Math.min(EDIT_BLANK_ROWS, MAX_INGREDIENT_ROWS - rows.length));
   return {
     title: detail.title,
     servings: detail.servings !== null ? formatQuantity(detail.servings) : '',
@@ -140,4 +166,13 @@ export function snapshotRecipeForm(form: FormData): RecipeFormValues {
     ingredients,
     tagSlugs: form.getAll('tags').map(String),
   };
+}
+
+/**
+ * Snapshot plus minimum-row padding for a failed-POST re-render, in one
+ * step so callers never mutate a snapshot after the fact.
+ */
+export function snapshotForRerender(form: FormData, minimumRows: number): RecipeFormValues {
+  const snapshot = snapshotRecipeForm(form);
+  return { ...snapshot, ingredients: padIngredientRows(snapshot.ingredients, minimumRows) };
 }
