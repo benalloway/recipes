@@ -1,0 +1,22 @@
+---
+interface Props {
+  replace?: boolean;
+}
+
+const { replace = false } = Astro.props;
+---
+
+<label for="image" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+  {replace ? 'Photo (optional — replaces the current photo)' : 'Photo (optional)'}
+</label>
+<input
+  id="image"
+  name="image"
+  type="file"
+  accept="image/jpeg,image/png,image/webp"
+  data-image-input
+  class="mt-2 w-full font-sans text-sm text-ink"
+/>
+<script>
+  import './image-input.ts';
+</script>

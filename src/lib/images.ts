@@ -5,57 +5,59 @@
  * for UX, but type and size are re-checked here. Extension always comes
  * from the sniffed type, never from the client filename.
  */
-import { RecipeValidationError } from './recipes';
+import type { getDb } from './adapters/db';
+import { RecipeValidationError, setHeadImageKey } from './recipes';
 
 export const MAX_IMAGE_BYTES = 5_000_000;
 
 export type ImageExtension = 'jpg' | 'png' | 'webp';
+
+const JPEG_MAGIC = [0xff, 0xd8, 0xff];
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const WEBP_RIFF = [0x52, 0x49, 0x46, 0x46];
+const WEBP_MARK = [0x57, 0x45, 0x42, 0x50];
+const WEBP_MARK_OFFSET = 8;
+
+/** True when `bytes` starts with `magic` at `offset`. */
+function matchesMagic(bytes: Uint8Array, magic: number[], offset = 0): boolean {
+  if (bytes.length < offset + magic.length) return false;
+  return magic.every((byte, i) => bytes[offset + i] === byte);
+}
 
 /**
  * Sniff jpeg (`ffd8ff`), png (`89504e47`), or webp (`RIFF....WEBP`)
  * magic bytes. Returns the extension to store, or null when unknown.
  */
 export function sniffImageExtension(bytes: Uint8Array): ImageExtension | null {
-  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return 'jpg';
-  }
-  if (
-    bytes.length >= 8 &&
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47 &&
-    bytes[4] === 0x0d &&
-    bytes[5] === 0x0a &&
-    bytes[6] === 0x1a &&
-    bytes[7] === 0x0a
-  ) {
-    return 'png';
-  }
-  if (
-    bytes.length >= 12 &&
-    bytes[0] === 0x52 &&
-    bytes[1] === 0x49 &&
-    bytes[2] === 0x46 &&
-    bytes[3] === 0x46 &&
-    bytes[8] === 0x57 &&
-    bytes[9] === 0x45 &&
-    bytes[10] === 0x42 &&
-    bytes[11] === 0x50
-  ) {
+  if (matchesMagic(bytes, JPEG_MAGIC)) return 'jpg';
+  if (matchesMagic(bytes, PNG_MAGIC)) return 'png';
+  if (matchesMagic(bytes, WEBP_RIFF) && matchesMagic(bytes, WEBP_MARK, WEBP_MARK_OFFSET)) {
     return 'webp';
   }
   return null;
 }
 
 export function contentTypeForExtension(extension: ImageExtension): string {
-  return extension === 'jpg' ? 'image/jpeg' : extension === 'png' ? 'image/png' : 'image/webp';
+  switch (extension) {
+    case 'jpg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    default:
+      return 'image/webp';
+  }
 }
 
 export interface ImageUpload {
   bytes: Uint8Array;
   extension: ImageExtension;
 }
+
+/** Shared `?error=` copy for the create/edit forms. */
+export const IMAGE_ERROR_MESSAGES = {
+  'image-type': 'Photo must be JPEG, PNG, or WebP.',
+  'image-size': 'Photos must be 5 MB or smaller.',
+} as const;
 
 /**
  * Read the optional `image` file field. No file chosen (missing field,
@@ -76,4 +78,38 @@ export async function readImageUpload(form: FormData): Promise<ImageUpload | nul
     throw new RecipeValidationError('image-size');
   }
   return { bytes, extension };
+}
+
+/** Minimal R2 surface `storeRecipeImage` needs — structural so this file stays portable. */
+export interface BlobStore {
+  put(
+    key: string,
+    value: Uint8Array,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<unknown>;
+}
+
+type Db = ReturnType<typeof getDb>;
+
+/** R2 key shape for a recipe photo. */
+export function buildImageKey(recipeId: number, extension: ImageExtension): string {
+  return `recipes/${recipeId}/${crypto.randomUUID()}.${extension}`;
+}
+
+/**
+ * Persist an upload to R2 and stamp it on the head version. Returns the key.
+ * Old R2 bytes are retained on replace (no cleanup in MVP).
+ */
+export async function storeRecipeImage(
+  db: Db,
+  blobs: BlobStore,
+  recipeId: number,
+  upload: ImageUpload,
+): Promise<string> {
+  const key = buildImageKey(recipeId, upload.extension);
+  await blobs.put(key, upload.bytes, {
+    httpMetadata: { contentType: contentTypeForExtension(upload.extension) },
+  });
+  await setHeadImageKey(db, recipeId, key);
+  return key;
 }

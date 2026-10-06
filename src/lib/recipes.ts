@@ -244,7 +244,10 @@ export async function toggleFavorite(db: Db, userId: number, recipeId: number): 
  */
 export async function setHeadImageKey(db: Db, recipeId: number, imageKey: string): Promise<void> {
   await db
-    .prepare('UPDATE recipe_versions SET image_key = ? WHERE id = (SELECT head_version_id FROM recipes WHERE id = ?)')
+    .prepare(
+      `UPDATE recipe_versions SET image_key = ?
+       WHERE id = (SELECT head_version_id FROM recipes WHERE id = ?)`,
+    )
     .bind(imageKey, recipeId)
     .run();
 }
@@ -301,10 +304,16 @@ export interface RecipeInput {
   tagSlugs: string[];
 }
 
+export type RecipeValidationErrorCode =
+  | 'title'
+  | 'servings'
+  | 'ingredients'
+  | 'instructions'
+  | 'image-type'
+  | 'image-size';
+
 export class RecipeValidationError extends Error {
-  constructor(
-    readonly code: 'title' | 'servings' | 'ingredients' | 'instructions' | 'image-type' | 'image-size',
-  ) {
+  constructor(readonly code: RecipeValidationErrorCode) {
     super(code);
   }
 }

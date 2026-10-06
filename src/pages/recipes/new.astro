@@ -1,14 +1,14 @@
 ---
 import Base from '../../layouts/Base.astro';
+import ImageField from '../../components/ImageField.astro';
 import { getBlobs } from '../../lib/adapters/blobs';
 import { getDb } from '../../lib/adapters/db';
-import { contentTypeForExtension, readImageUpload } from '../../lib/images';
+import { IMAGE_ERROR_MESSAGES, readImageUpload, storeRecipeImage } from '../../lib/images';
 import {
   INGREDIENT_FORM_ROWS,
   RecipeValidationError,
   createRecipe,
   parseRecipeForm,
-  setHeadImageKey,
 } from '../../lib/recipes';
 
 const session = Astro.locals.session;
@@ -35,11 +35,7 @@ if (Astro.request.method === 'POST') {
     const upload = await readImageUpload(form);
     const id = await createRecipe(db, session.userId, input);
     if (upload) {
-      const key = `recipes/${id}/${crypto.randomUUID()}.${upload.extension}`;
-      await getBlobs(Astro.locals).put(key, upload.bytes, {
-        httpMetadata: { contentType: contentTypeForExtension(upload.extension) },
-      });
-      await setHeadImageKey(db, id, key);
+      await storeRecipeImage(db, getBlobs(Astro.locals), id, upload);
     }
     return Astro.redirect(`/recipes/${id}`, 303);
   } catch (err) {
@@ -58,8 +54,7 @@ const ERRORS: Record<string, string> = {
   servings: 'Servings must be a number above 0.',
   ingredients: 'Check ingredient rows: names required, quantities numeric.',
   instructions: 'At least one instruction step is required.',
-  'image-type': 'Photo must be JPEG, PNG, or WebP.',
-  'image-size': 'Photos must be 5 MB or smaller.',
+  ...IMAGE_ERROR_MESSAGES,
 };
 const errorMessage = error ? (ERRORS[error] ?? 'Something went wrong. Try again.') : null;
 
@@ -183,20 +178,7 @@ const rows = Array.from({ length: INGREDIENT_FORM_ROWS }, (_, i) => i);
       </div>
       <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
 
-      <label for="image" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-        Photo (optional)
-      </label>
-      <input
-        id="image"
-        name="image"
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        data-image-input
-        class="mt-2 w-full font-sans text-sm text-ink"
-      />
-      <script>
-        import '../../components/image-input.ts';
-      </script>
+      <ImageField />
 
       <button
         type="submit"

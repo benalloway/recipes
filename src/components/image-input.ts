@@ -1,18 +1,17 @@
 /**
- * Image-input island (plain TS, no framework — the only island in M3d).
+ * Image-input island (plain TS, no framework).
  *
- * Trigger/API: any `<input type="file" data-image-input>` on the page opts
- * in. On submit the island downscales the chosen file on a canvas so the
- * long edge is `<= 1600px`, encodes `image/jpeg` at 0.82 quality, and
- * swaps the form's `File` before the real submit. Downscale failures
- * (non-image file, canvas error) fall through to the original file — the
- * server re-validates the received bytes either way. No-JS fallback: the
- * listener never attaches and the raw file uploads untouched.
- * Include once per page with:
- * `<script>import "../../components/image-input.ts";</script>`.
+ * Any `<input type="file" data-image-input>` opts in. On submit the island
+ * downscales the chosen file on a canvas so the long edge is `<= 1600px`,
+ * encodes `image/jpeg`, and swaps the form's `File` before the real submit.
+ * Downscale failures fall through to the original file — the server
+ * re-validates the received bytes either way. Without JS the raw file
+ * uploads untouched.
  */
 
 const MAX_LONG_EDGE = 1600;
+const JPEG_TYPE = 'image/jpeg';
+const JPEG_QUALITY = 0.82;
 
 /** Downscale `file` to a JPEG blob, or null when it cannot be decoded. */
 async function downscale(file: File): Promise<Blob | null> {
@@ -32,29 +31,36 @@ async function downscale(file: File): Promise<Blob | null> {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(bitmap, 0, 0, width, height);
-    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, JPEG_TYPE, JPEG_QUALITY));
   } finally {
     bitmap.close();
   }
 }
 
-for (const input of document.querySelectorAll<HTMLInputElement>('input[data-image-input][type="file"]')) {
+/** Replace the input's file with the downscaled JPEG, keeping the base name. */
+function swapInputFile(input: HTMLInputElement, original: File, blob: Blob): void {
+  const name = original.name.replace(/\.[^.]*$/, '') || 'photo';
+  const transfer = new DataTransfer();
+  transfer.items.add(new File([blob], `${name}.jpg`, { type: JPEG_TYPE }));
+  input.files = transfer.files;
+}
+
+/** Hold the submit for async downscale, then post for real. */
+function attachDownscale(input: HTMLInputElement): void {
   const form = input.form;
-  if (!form) continue;
+  if (!form) return;
   form.addEventListener('submit', (event) => {
     const file = input.files?.[0];
     if (!file || file.size === 0) return;
-    // Async work first: hold the submit, then post for real. `form.submit()`
-    // bypasses this listener, so no submit loop.
+    // `form.submit()` bypasses this listener, so no submit loop.
     event.preventDefault();
     void downscale(file).then((blob) => {
-      if (blob) {
-        const name = file.name.replace(/\.[^.]*$/, '') || 'photo';
-        const transfer = new DataTransfer();
-        transfer.items.add(new File([blob], `${name}.jpg`, { type: 'image/jpeg' }));
-        input.files = transfer.files;
-      }
+      if (blob) swapInputFile(input, file, blob);
       form.submit();
     });
   });
+}
+
+for (const input of document.querySelectorAll<HTMLInputElement>('input[data-image-input][type="file"]')) {
+  attachDownscale(input);
 }
