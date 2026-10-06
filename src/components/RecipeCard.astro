@@ -36,7 +36,7 @@ const { card } = Astro.props;
       aria-label={card.isFavorite ? 'Remove from favorites' : 'Save to favorites'}
       class="cursor-pointer border-0 bg-transparent p-0 font-sans text-base text-accent"
     >
-      ★
+      {card.isFavorite ? '★' : '☆'}
     </button>
   </form>
 </article>

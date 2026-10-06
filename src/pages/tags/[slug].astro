@@ -2,21 +2,16 @@
 import Base from '../../layouts/Base.astro';
 import RecipeCard from '../../components/RecipeCard.astro';
 import { getDb } from '../../lib/adapters/db';
-import { listByTag } from '../../lib/recipes';
+import { getTagBySlug, listByTag } from '../../lib/recipes';
 
 const session = Astro.locals.session;
 const slug = Astro.params.slug ?? '';
-const cards = session ? await listByTag(getDb(Astro.locals), session.userId, slug) : [];
+const db = getDb(Astro.locals);
+const tag = session ? await getTagBySlug(db, slug) : null;
+const cards = session && tag ? await listByTag(db, session.userId, slug) : tag ? [] : null;
 if (cards === null) {
   Astro.response.status = 404;
 }
-const heading =
-  cards === null
-    ? null
-    : ((await getDb(Astro.locals)
-        .prepare('SELECT name FROM tags WHERE slug = ?')
-        .bind(slug)
-        .first<{ name: string }>())?.name ?? slug);
 ---
 
 {
@@ -34,19 +29,23 @@ const heading =
       </main>
     </Base>
   ) : (
-    <Base title={heading ?? 'Tag'}>
+    <Base title={tag?.name ?? 'Tag'}>
       <main class="mx-auto max-w-xl px-6 py-16">
         <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
           <a href="/" class="text-accent">
             ← Recipes
           </a>
         </p>
-        <h1 class="mt-4 text-2xl font-light tracking-tight">{heading}</h1>
-        <div class="mt-8 grid gap-6">
-          {cards.map((card) => (
-            <RecipeCard card={card} />
-          ))}
-        </div>
+        <h1 class="mt-4 text-2xl font-light tracking-tight">{tag?.name}</h1>
+        {cards && cards.length > 0 ? (
+          <div class="mt-8 grid gap-6">
+            {cards.map((card) => (
+              <RecipeCard card={card} />
+            ))}
+          </div>
+        ) : (
+          <p class="mt-8 text-ink">No recipes with this tag yet.</p>
+        )}
       </main>
     </Base>
   )

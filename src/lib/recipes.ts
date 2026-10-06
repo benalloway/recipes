@@ -7,7 +7,7 @@
  * non-owned, missing, and soft-deleted recipes read as not-found, callers
  * never distinguish.
  */
-import { getDb } from './adapters/db';
+import type { getDb } from './adapters/db';
 
 /** D1 handle type, derived from the adapter — app code never names platform types. */
 type Db = ReturnType<typeof getDb>;
@@ -80,7 +80,7 @@ const CARD_SELECT = `
     t.name AS tag_name, t.slug AS tag_slug
   FROM recipes r
   JOIN recipe_versions v ON v.id = r.head_version_id
-  LEFT JOIN user_recipes ur ON ur.user_id = r.owner_user_id AND ur.recipe_id = r.id
+  LEFT JOIN user_recipes ur ON ur.user_id = ? AND ur.recipe_id = r.id
   LEFT JOIN recipe_tags rt ON rt.recipe_id = r.id
   LEFT JOIN tags t ON t.id = rt.tag_id`;
 
@@ -94,9 +94,9 @@ export async function getDashboard(db: Db, userId: number): Promise<RecipeCard[]
     .prepare(
       `${CARD_SELECT}
        WHERE r.owner_user_id = ? AND r.deleted_at IS NULL
-       ORDER BY r.created_at DESC LIMIT 200`,
+       ORDER BY r.created_at DESC, t.name LIMIT 200`,
     )
-    .bind(userId)
+    .bind(userId, userId)
     .all<CardRow>();
   return toCards(results ?? []);
 }
@@ -111,10 +111,10 @@ export async function getRecipeDetail(db: Db, id: number, userId: number): Promi
         ur.is_favorite AS is_favorite
        FROM recipes r
        JOIN recipe_versions v ON v.id = r.head_version_id
-       LEFT JOIN user_recipes ur ON ur.user_id = r.owner_user_id AND ur.recipe_id = r.id
+       LEFT JOIN user_recipes ur ON ur.user_id = ? AND ur.recipe_id = r.id
        WHERE r.id = ? AND r.owner_user_id = ? AND r.deleted_at IS NULL`,
     )
-    .bind(id, userId)
+    .bind(userId, id, userId)
     .first<{ id: number; title: string; servings: number | null; instructions: string; image_key: string | null; is_favorite: number | null }>();
   if (!head) return null;
 
@@ -134,7 +134,8 @@ export async function getRecipeDetail(db: Db, id: number, userId: number): Promi
     .prepare(
       `SELECT t.name AS name, t.slug AS slug
        FROM recipe_tags rt JOIN tags t ON t.id = rt.tag_id
-       WHERE rt.recipe_id = ?`,
+       WHERE rt.recipe_id = ?
+       ORDER BY t.name`,
     )
     .bind(id)
     .all<RecipeTag>();
@@ -159,6 +160,15 @@ export async function getRecipeDetail(db: Db, id: number, userId: number): Promi
   };
 }
 
+/** Tag row by slug — null when unknown. Keeps SQL in the lib, not pages. */
+export async function getTagBySlug(db: Db, slug: string): Promise<RecipeTag | null> {
+  const row = await db
+    .prepare('SELECT name, slug FROM tags WHERE slug = ?')
+    .bind(slug)
+    .first<RecipeTag>();
+  return row ?? null;
+}
+
 /** Own, non-deleted recipes carrying the tag — null when the tag is unknown. */
 export async function listByTag(db: Db, userId: number, slug: string): Promise<RecipeCard[] | null> {
   const tag = await db
@@ -171,9 +181,9 @@ export async function listByTag(db: Db, userId: number, slug: string): Promise<R
       `${CARD_SELECT}
        WHERE r.owner_user_id = ? AND r.deleted_at IS NULL
          AND EXISTS (SELECT 1 FROM recipe_tags rt WHERE rt.recipe_id = r.id AND rt.tag_id = ?)
-       ORDER BY r.created_at DESC LIMIT 200`,
+       ORDER BY r.created_at DESC, t.name LIMIT 200`,
     )
-    .bind(userId, tag.id)
+    .bind(userId, userId, tag.id)
     .all<CardRow>();
   return toCards(results ?? []);
 }
@@ -184,16 +194,17 @@ export async function listFavorites(db: Db, userId: number): Promise<RecipeCard[
     .prepare(
       `${CARD_SELECT}
        WHERE r.owner_user_id = ? AND r.deleted_at IS NULL AND ur.is_favorite = 1
-       ORDER BY ur.added_at DESC`,
+       ORDER BY ur.added_at DESC, t.name LIMIT 200`,
     )
-    .bind(userId)
+    .bind(userId, userId)
     .all<CardRow>();
   return toCards(results ?? []);
 }
 
 /**
  * Flip the favorite flag. Returns the new state, or null when the recipe
- * is missing, not owned, or deleted. Absent rows are inserted at 1.
+ * is missing, not owned, or deleted. Single UPSERT so concurrent toggles
+ * cannot collide on the (user_id, recipe_id) key — absent rows insert at 1.
  */
 export async function toggleFavorite(db: Db, userId: number, recipeId: number): Promise<boolean | null> {
   if (positiveInt(recipeId) === null || positiveInt(userId) === null) return null;
@@ -203,23 +214,19 @@ export async function toggleFavorite(db: Db, userId: number, recipeId: number): 
     .first<{ id: number }>();
   if (!owned) return null;
 
-  const existing = await db
+  await db
+    .prepare(
+      `INSERT INTO user_recipes (user_id, recipe_id, is_favorite)
+       VALUES (?, ?, 1)
+       ON CONFLICT (user_id, recipe_id) DO UPDATE SET is_favorite = 1 - user_recipes.is_favorite`,
+    )
+    .bind(userId, recipeId)
+    .run();
+  const row = await db
     .prepare('SELECT is_favorite FROM user_recipes WHERE user_id = ? AND recipe_id = ?')
     .bind(userId, recipeId)
     .first<{ is_favorite: number }>();
-  if (!existing) {
-    await db
-      .prepare('INSERT INTO user_recipes (user_id, recipe_id, is_favorite) VALUES (?, ?, 1)')
-      .bind(userId, recipeId)
-      .run();
-    return true;
-  }
-  const next = existing.is_favorite === 1 ? 0 : 1;
-  await db
-    .prepare('UPDATE user_recipes SET is_favorite = ? WHERE user_id = ? AND recipe_id = ?')
-    .bind(next, userId, recipeId)
-    .run();
-  return next === 1;
+  return row ? row.is_favorite === 1 : null;
 }
 
 /** `2.0` renders `2`; non-integers keep their shortest form. */
