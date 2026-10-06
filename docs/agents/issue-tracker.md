@@ -1,103 +1,45 @@
-# Issue tracker (GitHub) — repo conventions for skills
+# Issue tracker: GitHub
 
-Issues live in this repo's GitHub Issues (`gh` CLI). Every unit of work follows
-`.github/ISSUE_TEMPLATE/agent-task.md` (Goal / Tasks / Acceptance / Human gates),
-plus the two machine-readable sections below that the automation depends on.
-PLAN.md is the source of truth; milestones are never redefined without the owner.
+Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
-## Publishing rules (overrides skill defaults)
+## Conventions
 
-- New tickets are created with label `needs-triage` and the milestone set.
-  **Never apply `ready-for-agent` when publishing.** Promotion to
-  `ready-for-agent` is the automation's job: `triage-requested` → adversarial
-  triage → PASS *and* frontier-clear → `ready-for-agent` + `agent:implement` →
-  implement fires (held with `agent:blocked` while anything waits).
-  (This overrides `to-tickets` step 5's "apply `ready-for-agent` unless
-  instructed otherwise", and the vendored `triage` skill's "quick state
-  override": you are hereby instructed otherwise. Belt and suspenders: the
-  implement preflight fails closed on missing `Touches`, so a directly-labeled
-  issue without conflict data cannot run.)
-- Do NOT close or rewrite a parent issue when splitting it. Archive the original
-  body in a comment first, then rewrite; link siblings both ways.
-- Prefer vertical slices (tracer bullets): each ticket delivers one demoable,
-  end-to-end behavior with runnable acceptance, not one horizontal layer.
-- `to-spec` publishes specs as `needs-triage` like any other ticket (overrides
-  its "apply `ready-for-agent`" step: you are hereby instructed otherwise).
-  Specs enter the same adversarial triage before anything builds them.
-- `implement` / `implement-spec` in this repo mean the AGENTS.md Workflow
-  lifecycle, not the skill's bare loop: work on a fresh `feat/*` / `fix/*`
-  branch (never the current branch, never `main`), verify with
-  `npm run check` + `npm run build`, open a PR per `.github/PULL_REQUEST_TEMPLATE.md`
-  with `Closes #N`, add the `CHANGES.md` entry when production behavior changes,
-  never merge. The skill's "commit to the current branch" and standalone
-  `/tdd`+`/code-review` closeout are subordinate to that lifecycle. Likewise
-  `implement-spec`'s integration branch, per-ticket worktrees, and merger
-  subagents are forbidden here: one ticket = one `feat/*` / `fix/*` branch =
-  one PR; linear history via rebase, never merges into the branch.
-- Wizards instantiated from the `wizard` skill must set `ENV_FILE=.dev.vars`
-  (repo convention, gitignored) — never the template default `.env`, which is
-  not ignored here and could persist secrets to a committable file.
+- **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
+- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.
+- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
+- **Comment on an issue**: `gh issue comment <number> --body "..."`
+- **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
+- **Close**: `gh issue close <number> --comment "..."`
 
-## `Blocked by` section (required on every ticket)
+Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
-```markdown
-## Blocked by
+## Pull requests as a triage surface
 
-- None (can start immediately).
-```
+**PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
 
-or list each edge: `- #13 (detail page this asserts against)`,
-`- external: recipes-media bucket must exist`. Open refs gate execution:
-triage PASS applies `ready-for-agent` + `agent:implement` plus `agent:blocked`
-while any edge is open, and implement refuses until all edges clear.
+When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr` equivalents:
 
-## `Touches` section (required on every ticket)
+- **Read a PR**: `gh pr view <number> --comments` and `gh pr diff <number>` for the diff.
+- **List external PRs for triage**: `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments` then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`).
+- **Comment / label / close**: `gh pr comment`, `gh pr edit --add-label`/`--remove-label`, `gh pr close`.
 
-```markdown
-## Touches
+GitHub shares one number space across issues and PRs, so a bare `#42` may be either: resolve with `gh pr view 42` and fall back to `gh issue view 42`.
 
-`src/lib/recipes.ts`, `src/pages/recipes/new.astro`
-```
+## When a skill says "publish to the issue tracker"
 
-Repo-relative paths the implementation is expected to change. Triage validates
-the list; the blocked-gate diffs it against files changed by open PRs and
-`agent:in-progress` issues to detect same-file conflicts before implement fires.
-`CHANGES.md` need not be listed (always rebase-trivial).
+Create a GitHub issue.
 
-## Wayfinding operations (how this repo expresses the wayfinder skill)
+## When a skill says "fetch the relevant ticket"
 
-Map and tickets live as GitHub issues. Hierarchy uses **native sub-issues**;
-execution gating uses **native blocked-by edges**. Body-text `## Blocked by`
-sections remain as the human-readable record and as the preflight's fallback
-when the native graph is unreachable.
+Run `gh issue view <number> --comments`.
 
-- **Create the map**: `gh issue create --label "wayfinder:map"` with the
-  Destination / Notes / Decisions-so-far / Not-yet-specified / Out-of-scope
-  body (template `wayfinder-map.md`). Never add triage or implement labels.
-- **Create tickets as sub-issues**: `gh issue create --parent <map> --label
-  "wayfinder:<type>"` (needs gh ≥ 2.101.0 for `--parent`; older CLIs need the
-  REST attach fallback below) using templates `wayfinder-research.md`,
-  `wayfinder-prototype.md`, `wayfinder-grilling.md`, `wayfinder-task.md`,
-  or attach later via `POST /repos/{owner}/{repo}/issues/{map}/sub_issues`
-  with body `{"sub_issue_id": <integer database id of the child>}`.
-- **Blocking between tickets**: native edges via
-  `echo '{"issue_id": <integer database id>}' | gh api
-  repos/{owner}/{repo}/issues/{n}/dependencies/blocked_by --input -`
-  — note the id must be the integer database id, not the `I_...` node id.
-  Read it with REST (`gh api repos/{owner}/{repo}/issues/{id} --jq .id`)
-  rather than GraphQL; pipe typed JSON with `--input -` because `gh api -f`
-  sends strings. Read back with `GET .../dependencies/blocked_by` or
-  `gh issue view <n> --json blockedBy`.
-- **Claim**: assign the ticket to yourself before any work (assignee is the
-  claim); open + unassigned means unclaimed.
-- **Frontier**: open, unblocked, unclaimed children —
-  `gh api repos/{owner}/{repo}/issues/{map}/sub_issues --jq
-  '.[] | select(.state == "open" and .assignees == [] and
-  ((.labels // []) | map(.name) | index("wayfinder:map") | not))'`
-  then drop any whose number appears in another child's `blocked_by`
-  (`GET .../issues/{child}/dependencies/blocked_by`).
-- **Resolve**: post the answer as a resolution comment, close the issue,
-  append a gist-link line to the map's Decisions-so-far.
-- **Graduate**: fog patches that sharpen become new sub-issue tickets;
-  buildable outcomes graduate via `to-tickets` as `needs-triage` build
-  tickets with `Blocked by` + `Touches`, entering the normal pipeline.
+## Wayfinding operations
+
+Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets.
+
+- **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body. `gh issue create --label wayfinder:map`.
+- **Child ticket**: an issue linked to the map as a GitHub sub-issue (`gh api` on the sub-issues endpoint). Where sub-issues aren't enabled, add the child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev.
+- **Blocking**: GitHub's **native issue dependencies**, the canonical, UI-visible representation. Add an edge with `gh api --method POST repos/<owner>/<repo>/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` is the blocker's numeric **database id** (`gh api repos/<owner>/<repo>/issues/<n> --jq .id`, _not_ the `#number` or `node_id`). GitHub reports `issue_dependencies_summary.blocked_by` (open blockers only, the live gate). Where dependencies aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of the child body. A ticket is unblocked when every blocker is closed.
+- **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
+- **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
+- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.

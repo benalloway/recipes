@@ -8,4 +8,4 @@ labels: wayfinder:task
 
 <!-- the manual work and which decision it unblocks. This is the one type that does rather than decides. Resolved when the work is done; the answer records what was done plus resulting facts (credentials location, URLs, row counts). Then close. -->
 
-<!-- Repo conventions: create as a sub-issue of the map; claim by assigning to yourself before any work; never add triage/implement labels to wayfinder tickets. `Touches: n/a` — decision tickets never implement. -->
+<!-- Repo conventions: create as a sub-issue of the map; claim by assigning to yourself before any work; never add triage labels to wayfinder tickets. -->

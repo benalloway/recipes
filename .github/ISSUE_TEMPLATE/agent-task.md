@@ -1,33 +1,19 @@
 ---
 name: Agent task
-about: Scoped unit of work for an agent (one issue = one branch = one PR)
+about: Tracer-bullet slice for Sandcastle (one issue per branch, merged by the factory)
 labels: needs-triage
 ---
 
-**Goal**
+## What to build
 
-<!-- single-sentence outcome -->
+<!-- end-to-end behaviour this ticket makes work, from the user's perspective -->
 
-**Tasks**
+## Acceptance criteria
 
-<!-- checkboxes; keep agent-executable (no hidden context) -->
-
-**Acceptance**
-
-<!-- how the reviewer verifies; commands where possible -->
-
-**Human gates**
-
-<!-- anything agent cannot do itself: dashboard, credentials, DNS. "none" if not applicable -->
+- [ ] <!-- verifiable criterion (commands where possible) -->
 
 ## Blocked by
 
-<!-- edges gating execution: `- #N (why)` per open dependency, `- external: ...` per out-of-band gate, or `None (can start immediately)`. Triage PASS applies `agent:blocked` while any edge is open. Heading must stay exactly `## Blocked by` — parsed by automation. -->
-
 - None (can start immediately).
 
-## Touches
-
-<!-- repo-relative paths the implementation is expected to change, for same-file conflict detection. Omit CHANGES.md (always rebase-trivial). One backticked path per line-ish (no spaces inside backticks). Heading must stay exactly `## Touches` — parsed by automation; an empty/unparseable list blocks implement. -->
-
-- (list paths)
+<!-- or: - #N (why this gates) per open dependency -->
