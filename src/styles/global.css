@@ -19,6 +19,12 @@
   --color-accent: #b4432a;
 
   --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* Chapbook voice: serif with character for recipe titles (ADR-0002).
+     System stack only — no webfonts, no new colors. */
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Book Antiqua', serif;
+  /* Marginalia: single handwriting face for human-hand notes only
+     (empty-state asides, edit notes — never body copy or labels). */
+  --font-hand: 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', cursive;
 }
 
 @layer base {

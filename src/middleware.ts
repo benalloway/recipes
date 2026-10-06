@@ -16,6 +16,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   const open =
     OPEN_PATHS.has(normalized) ||
+    // Cardstock browse (#46): `/` doubles as the logged-out landing
+    // (login CTA, no dead ends) — everything else still gates to /login.
+    normalized === '/' ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/_astro/');
   if (!open && !context.locals.session) {
