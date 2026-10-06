@@ -17,3 +17,10 @@ and not invent synonyms. See `docs/agents/domain.md` for consumer rules.
 - **island**: plain-TS interactive bit, no framework
 - **portability boundary**: `src/lib/runtime.ts`, `src/lib/adapters/*`,
   `src/env.d.ts` — the only files that may import platform modules
+- **cardstock**: the design language (ADR-0002) — tactile minimalism; the card
+  stays a feeling (paper, rules, ink), never decoration
+- **plate**: a user photo rendered with the Cardstock treatment (warm
+  duotone/tint overlay, restrained frame, fixed aspect) — never a hero banner
+- **marginalia**: the single handwriting face, used only where a human hand
+  would write (edit notes, personal asides) — never body copy or labels
+- **calm-abundance grid**: generous dashboard/browse grid with breathing room
