@@ -12,6 +12,23 @@ would ever need undoing.
 
 ---
 
+## Unreleased — M3 slice 3: recipe edit (issue #15)
+
+Change: signed-in edit writes a new immutable head version (n+1, old
+versions untouched, image key carried forward) — `GET/POST
+/recipes/[id]/edit` with head-version prefill (existing rows + 4 blanks),
+same validation/error vocabulary as create, tags replaced per edit.
+Shared `parseRecipeForm` now reads up to 50 indexed rows (new form still
+renders 8). No history UI (M4), no images/delete. No migrations.
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e via
+`npm run preview` (logged-out POST 302, prefill renders, valid edit 303
+with v1 byte-identical + head at v2 + tags replaced, empty-title 303 with
+version count unchanged, non-owner GET/POST + missing id 404, detail
+shows v2).
+
+Rollback: `npx wrangler rollback` (no schema change).
+
 ## Unreleased — M3 slice 2: recipe create (issue #14)
 
 Change: signed-in recipe create — `GET /recipes/new` form (title, servings,
