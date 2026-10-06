@@ -299,12 +299,11 @@ export function slugify(name: string): string {
 }
 
 /** Keeps order, dedups, drops anything not in `known`. */
-export function filterKnownSlugs(candidates: string[], known: string[]): string[] {
-  const knownSet = new Set(known);
+export function filterKnownSlugs(candidates: string[], known: Set<string>): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const candidate of candidates) {
-    if (knownSet.has(candidate) && !seen.has(candidate)) {
+    if (known.has(candidate) && !seen.has(candidate)) {
       seen.add(candidate);
       out.push(candidate);
     }
@@ -316,7 +315,7 @@ function parseQuantity(raw: string): number | null {
   const trimmed = raw.trim();
   if (trimmed === '') return null;
   const value = Number(trimmed);
-  if (!Number.isFinite(value) || value < 0 || value > MAX_QUANTITY) {
+  if (!Number.isFinite(value) || value <= 0 || value > MAX_QUANTITY) {
     throw new RecipeValidationError('ingredients');
   }
   return value;
@@ -366,21 +365,23 @@ export function parseRecipeForm(form: FormData, knownTagSlugs: Set<string>): Rec
     if (name === '' && qtyRaw.trim() === '' && unitRaw === '' && noteRaw === '') {
       continue;
     }
-    if (name === '' || name.length > MAX_INGREDIENT_NAME_LENGTH) {
+    if (name === '' || name.length > MAX_INGREDIENT_NAME_LENGTH || slugify(name) === '') {
       throw new RecipeValidationError('ingredients');
     }
     const quantity = parseQuantity(qtyRaw);
-    const unit = unitRaw === '' ? null : unitRaw.length <= MAX_UNIT_LENGTH ? unitRaw : null;
-    if (unitRaw !== '' && unit === null) throw new RecipeValidationError('ingredients');
-    const note = noteRaw === '' ? null : noteRaw.length <= MAX_NOTE_LENGTH ? noteRaw : null;
-    if (noteRaw !== '' && note === null) throw new RecipeValidationError('ingredients');
+    const unit = unitRaw === '' ? null : unitRaw;
+    if (unit !== null && unit.length > MAX_UNIT_LENGTH) throw new RecipeValidationError('ingredients');
+    const note = noteRaw === '' ? null : noteRaw;
+    if (note !== null && note.length > MAX_NOTE_LENGTH) throw new RecipeValidationError('ingredients');
     ingredients.push({ name, quantity, unit, note });
   }
-  if (ingredients.length > MAX_INGREDIENT_ROWS) {
+  // Fixed at INGREDIENT_FORM_ROWS today, so the cap below is unreachable —
+  // kept as future-proofing for a dynamic (JS-grown) row set.
+  if (ingredients.length < 1 || ingredients.length > MAX_INGREDIENT_ROWS) {
     throw new RecipeValidationError('ingredients');
   }
 
-  const tagSlugs = filterKnownSlugs(form.getAll('tags').map(String), [...knownTagSlugs]);
+  const tagSlugs = filterKnownSlugs(form.getAll('tags').map(String), knownTagSlugs);
   return { title, servings, instructions, ingredients, tagSlugs };
 }
 
@@ -392,6 +393,9 @@ export function parseRecipeForm(form: FormData, knownTagSlugs: Set<string>): Rec
  * is a real FK, so the recipe row lands with NULL before the version id
  * is patched in. New ingredient names get canonical rows with NULL
  * category (uncategorized). Returns the recipe id.
+ *
+ * Precondition: `input` passed `parseRecipeForm` (lengths/ranges validated).
+ * Direct callers must validate first — this function asserts FK shape only.
  */
 export async function createRecipe(db: Db, userId: number, input: RecipeInput): Promise<number> {
   const recipe = await db

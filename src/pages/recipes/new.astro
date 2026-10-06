@@ -20,7 +20,7 @@ if (Astro.request.method === 'POST') {
   try {
     form = await Astro.request.formData();
   } catch {
-    return Astro.redirect('/recipes/new?error=title', 303);
+    return Astro.redirect('/recipes/new?error=unknown', 303);
   }
   const knownTagSlugs = new Set(
     (
@@ -51,7 +51,7 @@ const ERRORS: Record<string, string> = {
 const errorMessage = error ? (ERRORS[error] ?? 'Something went wrong. Try again.') : null;
 
 const canonicalIngredients =
-  ((await db.prepare('SELECT name FROM ingredients ORDER BY name').all<{ name: string }>()).results ?? []).map(
+  ((await db.prepare('SELECT name FROM ingredients ORDER BY name LIMIT 500').all<{ name: string }>()).results ?? []).map(
     (row) => row.name,
   );
 const allTags =
