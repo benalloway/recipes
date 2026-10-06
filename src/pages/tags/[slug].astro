@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import EmptyState from '../../components/EmptyState.astro';
 import RecipeCard from '../../components/RecipeCard.astro';
 import { getDb } from '../../lib/adapters/db';
 import { getTagBySlug, listByTag } from '../../lib/recipes';
@@ -8,7 +9,7 @@ const session = Astro.locals.session;
 const slug = Astro.params.slug ?? '';
 const db = getDb(Astro.locals);
 const tag = session ? await getTagBySlug(db, slug) : null;
-const cards = session && tag ? await listByTag(db, session.userId, slug) : tag ? [] : null;
+const cards = session && tag ? await listByTag(db, session.userId, slug) : null;
 if (cards === null) {
   Astro.response.status = 404;
 }
@@ -37,14 +38,14 @@ if (cards === null) {
           </a>
         </p>
         <h1 class="mt-4 text-2xl font-light tracking-tight">{tag?.name}</h1>
-        {cards && cards.length > 0 ? (
+        {cards.length > 0 ? (
           <div class="mt-8 grid gap-6">
             {cards.map((card) => (
               <RecipeCard card={card} />
             ))}
           </div>
         ) : (
-          <div class="mt-8 border border-hairline bg-surface p-6">
+          <EmptyState>
             <p class="text-ink">No recipes with this tag yet.</p>
             <p class="mt-4 flex gap-6">
               <a href="/" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
@@ -54,7 +55,7 @@ if (cards === null) {
                 Add a recipe →
               </a>
             </p>
-          </div>
+          </EmptyState>
         )}
       </main>
     </Base>

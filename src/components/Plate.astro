@@ -1,9 +1,8 @@
 ---
 /**
- * Plate — a user photo with the Cardstock treatment (ADR-0002): restrained
- * frame, fixed aspect (never unbounded heights), warm paprika tint overlay
- * at low opacity. Content photos take a meaningful alt (recipe title);
- * decorative uses pass alt="" explicitly.
+ * Plate — user photo in the Cardstock frame (ADR-0002): fixed 4:3 aspect,
+ * paprika tint at low opacity. Pass the recipe title as alt; pass alt=""
+ * only for decorative thumbnails.
  */
 interface Props {
   src: string;

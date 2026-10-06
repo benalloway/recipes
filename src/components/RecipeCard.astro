@@ -20,7 +20,7 @@ const { card } = Astro.props;
         <Plate src={`/media/${card.imageKey}`} alt={card.title} />
       </div>
     ) : (
-      <div class="mt-4 block h-32 w-full bg-bg" aria-hidden="true" />
+      <div class="mt-4 h-32 bg-bg" aria-hidden="true" />
     )
   }
   {

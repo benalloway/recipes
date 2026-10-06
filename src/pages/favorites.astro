@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import EmptyState from '../components/EmptyState.astro';
 import RecipeCard from '../components/RecipeCard.astro';
 import { getDb } from '../lib/adapters/db';
 import { listFavorites } from '../lib/recipes';
@@ -24,7 +25,7 @@ const cards = session ? await listFavorites(getDb(Astro.locals), session.userId)
           ))}
         </div>
       ) : (
-        <div class="mt-8 border border-hairline bg-surface p-6">
+        <EmptyState>
           <p class="text-ink">No favorites yet. Tap the star on any recipe to keep it here.</p>
           <p class="mt-4 flex gap-6">
             <a href="/" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
@@ -34,7 +35,7 @@ const cards = session ? await listFavorites(getDb(Astro.locals), session.userId)
               Add a recipe →
             </a>
           </p>
-        </div>
+        </EmptyState>
       )
     }
   </main>

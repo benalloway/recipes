@@ -6,9 +6,9 @@ interface Props {
 }
 
 const { title } = Astro.props;
-// Layouts can read middleware locals: render the auth control when known,
-// but the Recipes / Favorites / New links render on every page either way.
 const session = Astro.locals.session;
+
+const navLink = 'font-sans text-xs uppercase tracking-[0.2em] text-accent';
 ---
 
 <!doctype html>
@@ -24,11 +24,11 @@ const session = Astro.locals.session;
       <nav aria-label="Primary" class="mx-auto flex max-w-xl items-baseline justify-between px-6 py-4">
         <a href="/" class="text-[10px] font-medium uppercase tracking-[0.28em] text-ink">Recipes</a>
         <div class="flex items-center gap-5">
-          <a href="/" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">Recipes</a>
-          <a href="/favorites" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
+          <a href="/" class={navLink}>Recipes</a>
+          <a href="/favorites" class={navLink}>
             Favorites
           </a>
-          <a href="/recipes/new" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">New</a>
+          <a href="/recipes/new" class={navLink}>New</a>
           {
             session ? (
               <form method="post" action="/auth/logout" class="m-0">
@@ -40,7 +40,7 @@ const session = Astro.locals.session;
                 </button>
               </form>
             ) : (
-              <a href="/login" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
+              <a href="/login" class={navLink}>
                 Sign in
               </a>
             )
