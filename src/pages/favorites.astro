@@ -1,0 +1,31 @@
+---
+import Base from '../layouts/Base.astro';
+import RecipeCard from '../components/RecipeCard.astro';
+import { getDb } from '../lib/adapters/db';
+import { listFavorites } from '../lib/recipes';
+
+const session = Astro.locals.session;
+const cards = session ? await listFavorites(getDb(Astro.locals), session.userId) : [];
+---
+
+<Base title="Favorites">
+  <main class="mx-auto max-w-xl px-6 py-16">
+    <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+      <a href="/" class="text-accent">
+        ← Recipes
+      </a>
+    </p>
+    <h1 class="mt-4 text-2xl font-light tracking-tight">Favorites</h1>
+    {
+      cards.length > 0 ? (
+        <div class="mt-8 grid gap-6">
+          {cards.map((card) => (
+            <RecipeCard card={card} />
+          ))}
+        </div>
+      ) : (
+        <p class="mt-8 text-ink">No favorites yet. Tap the star on any recipe.</p>
+      )
+    }
+  </main>
+</Base>

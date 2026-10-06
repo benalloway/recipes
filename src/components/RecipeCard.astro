@@ -1,0 +1,42 @@
+---
+import type { RecipeCard as Card } from '../lib/recipes';
+import TagChip from './TagChip.astro';
+
+interface Props {
+  card: Card;
+}
+
+const { card } = Astro.props;
+---
+
+<article class="border border-hairline bg-surface p-6">
+  <a href={`/recipes/${card.id}`} class="text-lg font-light tracking-tight text-ink">
+    {card.title}
+  </a>
+  {
+    card.imageKey ? (
+      <img src={`/media/${card.imageKey}`} alt="" class="mt-4 block w-full" />
+    ) : (
+      <div class="mt-4 block h-32 w-full bg-bg" aria-hidden="true" />
+    )
+  }
+  {
+    card.tags.length > 0 && (
+      <p class="mt-4 flex flex-wrap gap-x-4 gap-y-1">
+        {card.tags.map((tag) => (
+          <TagChip name={tag.name} slug={tag.slug} />
+        ))}
+      </p>
+    )
+  }
+  <form method="post" action={`/recipes/${card.id}/favorite`} class="mt-4">
+    <button
+      type="submit"
+      aria-pressed={card.isFavorite ? 'true' : 'false'}
+      aria-label={card.isFavorite ? 'Remove from favorites' : 'Save to favorites'}
+      class="cursor-pointer border-0 bg-transparent p-0 font-sans text-base text-accent"
+    >
+      {card.isFavorite ? '★' : '☆'}
+    </button>
+  </form>
+</article>

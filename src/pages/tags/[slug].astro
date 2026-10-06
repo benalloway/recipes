@@ -1,0 +1,52 @@
+---
+import Base from '../../layouts/Base.astro';
+import RecipeCard from '../../components/RecipeCard.astro';
+import { getDb } from '../../lib/adapters/db';
+import { getTagBySlug, listByTag } from '../../lib/recipes';
+
+const session = Astro.locals.session;
+const slug = Astro.params.slug ?? '';
+const db = getDb(Astro.locals);
+const tag = session ? await getTagBySlug(db, slug) : null;
+const cards = session && tag ? await listByTag(db, session.userId, slug) : tag ? [] : null;
+if (cards === null) {
+  Astro.response.status = 404;
+}
+---
+
+{
+  cards === null ? (
+    <Base title="Not found">
+      <main class="mx-auto max-w-xl px-6 py-16">
+        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">404 — Not found</p>
+        <h1 class="mt-4 text-2xl font-light tracking-tight">Not found</h1>
+        <p class="mt-2 text-ink">No such tag.</p>
+        <p class="mt-4">
+          <a href="/" class="text-xs uppercase tracking-[0.2em] text-accent">
+            ← Back to recipes
+          </a>
+        </p>
+      </main>
+    </Base>
+  ) : (
+    <Base title={tag?.name ?? 'Tag'}>
+      <main class="mx-auto max-w-xl px-6 py-16">
+        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+          <a href="/" class="text-accent">
+            ← Recipes
+          </a>
+        </p>
+        <h1 class="mt-4 text-2xl font-light tracking-tight">{tag?.name}</h1>
+        {cards && cards.length > 0 ? (
+          <div class="mt-8 grid gap-6">
+            {cards.map((card) => (
+              <RecipeCard card={card} />
+            ))}
+          </div>
+        ) : (
+          <p class="mt-8 text-ink">No recipes with this tag yet.</p>
+        )}
+      </main>
+    </Base>
+  )
+}
