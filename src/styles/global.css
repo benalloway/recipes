@@ -19,6 +19,10 @@
   --color-accent: #b4432a;
 
   --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* The single handwriting face (ADR-0002): marginalia only — edit notes,
+     personal asides, never body copy or labels. System hands so no webfont
+     ships; generates the `font-hand` utility. */
+  --font-hand: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive;
 }
 
 @layer base {

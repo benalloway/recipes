@@ -1,0 +1,55 @@
+/**
+ * Ingredient-rows island (plain TS, no framework).
+ *
+ * Any `[data-ingredient-rows]` container opts in. Add/remove controls
+ * render `hidden` so the no-JS fallback posts the server-rendered rows
+ * untouched; this island unhides them and wires:
+ * - `[data-add-row]` clones the `<template data-row-template>` blank,
+ *   stamping `__INDEX__` (0-based field names) and `__N__` (1-based
+ *   labels) with the next index. The parser reads indexes `0..49`
+ *   (`MAX_INGREDIENT_ROWS`), so appended rows submit like server rows.
+ * - `[data-remove-row]` removes its own `[data-ingredient-row]`; the
+ *   last remaining row is cleared instead, so the form always posts
+ *   ingredient fields. Gaps in the numbering are fine — the parser
+ *   skips fully-blank indexes.
+ *
+ * Include once per page with:
+ * `<script>import "./ingredient-rows.ts";</script>`.
+ */
+
+import { MAX_INGREDIENT_ROWS } from '../lib/recipes';
+
+const container = document.querySelector<HTMLElement>('[data-ingredient-rows]');
+const template = document.querySelector<HTMLTemplateElement>('template[data-row-template]');
+const addButton = document.querySelector<HTMLButtonElement>('[data-add-row]');
+
+if (container && template && addButton) {
+  // Progressive enhancement: reveal the controls only when JS runs.
+  for (const control of document.querySelectorAll('[data-add-row], [data-remove-row]')) {
+    control.removeAttribute('hidden');
+  }
+
+  let next = Number(container.dataset.nextIndex ?? '0');
+  if (!Number.isFinite(next) || next < 0) next = 0;
+
+  addButton.addEventListener('click', () => {
+    if (next >= MAX_INGREDIENT_ROWS) return;
+    const html = template.innerHTML.replaceAll('__INDEX__', String(next)).replaceAll('__N__', String(next + 1));
+    container.insertAdjacentHTML('beforeend', html);
+    next += 1;
+    container.dataset.nextIndex = String(next);
+    if (next >= MAX_INGREDIENT_ROWS) addButton.setAttribute('disabled', '');
+  });
+
+  container.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest?.('[data-remove-row]');
+    if (!(button instanceof HTMLButtonElement)) return;
+    const row = button.closest('[data-ingredient-row]');
+    if (!row) return;
+    if (container.querySelectorAll('[data-ingredient-row]').length <= 1) {
+      for (const input of row.querySelectorAll('input')) input.value = '';
+      return;
+    }
+    row.remove();
+  });
+}

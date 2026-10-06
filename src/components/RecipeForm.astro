@@ -1,0 +1,230 @@
+---
+/**
+ * Shared new/edit recipe form — Cardstock 2 (issue #45).
+ *
+ * Server re-renders with submitted `values` + inline `fieldErrors`
+ * (never wipes input on validation failure). Ingredient rows are
+ * dynamic via the `ingredient-rows.ts` island; without JS the
+ * server-rendered rows post untouched. Submit sits in a sticky
+ * bottom bar so it stays visible on small viewports.
+ */
+import ImageField from './ImageField.astro';
+import type { RecipeFormField, RecipeFormValues } from '../lib/recipe-form';
+
+interface Props {
+  action: string;
+  submitLabel: string;
+  values: RecipeFormValues;
+  fieldErrors: Partial<Record<RecipeFormField, string>>;
+  summaryError: string | null;
+  allTags: { name: string; slug: string }[];
+  canonicalIngredients: string[];
+  imageReplace: boolean;
+}
+
+const { action, submitLabel, values, fieldErrors, summaryError, allTags, canonicalIngredients, imageReplace } =
+  Astro.props;
+
+const checkedSlugs = new Set(values.tagSlugs);
+
+const textInput =
+  'mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent';
+const rowInput =
+  'w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent';
+const label = 'text-[10px] font-medium uppercase tracking-[0.28em] text-muted';
+const fieldError = 'mt-1 text-sm text-accent';
+
+function describedBy(field: RecipeFormField): string | undefined {
+  return fieldErrors[field] ? `${field}-error` : undefined;
+}
+---
+
+{
+  summaryError && (
+    <div role="alert" class="mt-6 border border-hairline bg-surface px-6 py-4">
+      <p class="text-sm text-ink">{summaryError}</p>
+    </div>
+  )
+}
+
+<form method="post" action={action} enctype="multipart/form-data" class="mt-8">
+  <label for="title" class={label}>Title</label>
+  <input
+    id="title"
+    name="title"
+    type="text"
+    required
+    maxlength="200"
+    placeholder="Tomato soup"
+    value={values.title}
+    aria-invalid={fieldErrors.title ? 'true' : undefined}
+    aria-describedby={describedBy('title')}
+    class={textInput}
+  />
+  {fieldErrors.title && <p id="title-error" class={fieldError}>{fieldErrors.title}</p>}
+
+  <label for="servings" class={`mt-8 block ${label}`}>Servings (blank for none)</label>
+  <input
+    id="servings"
+    name="servings"
+    type="text"
+    inputmode="decimal"
+    placeholder="4"
+    value={values.servings}
+    aria-invalid={fieldErrors.servings ? 'true' : undefined}
+    aria-describedby={describedBy('servings')}
+    class={textInput}
+  />
+  {fieldErrors.servings && <p id="servings-error" class={fieldError}>{fieldErrors.servings}</p>}
+
+  <label for="instructions" class={`mt-8 block ${label}`}>Instructions (one step per line)</label>
+  <textarea
+    id="instructions"
+    name="instructions"
+    required
+    rows="6"
+    placeholder={'Chop\nSimmer'}
+    aria-invalid={fieldErrors.instructions ? 'true' : undefined}
+    aria-describedby={describedBy('instructions')}
+    class="mt-2 w-full border border-hairline bg-transparent px-4 py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+  >{values.instructions}</textarea>
+  {fieldErrors.instructions && <p id="instructions-error" class={fieldError}>{fieldErrors.instructions}</p>}
+
+  <h2 class={`mt-8 ${label}`}>Ingredients</h2>
+  {fieldErrors.ingredients && <p id="ingredients-error" class={fieldError}>{fieldErrors.ingredients}</p>}
+  <datalist id="canonical-ingredients">
+    {canonicalIngredients.map((name) => (
+      <option value={name} />
+    ))}
+  </datalist>
+  <div data-ingredient-rows data-next-index={values.ingredients.length}>
+    {values.ingredients.map((row, i) => (
+      <div data-ingredient-row class="mt-4 grid grid-cols-2 gap-4 border-t border-hairline pt-4">
+        <input
+          name={`ing-name-${i}`}
+          type="text"
+          maxlength="100"
+          list="canonical-ingredients"
+          placeholder="Ingredient"
+          aria-label={`Ingredient ${i + 1} name`}
+          value={row.name}
+          class={`col-span-2 ${rowInput}`}
+        />
+        <input
+          name={`ing-qty-${i}`}
+          type="text"
+          inputmode="decimal"
+          placeholder="Qty"
+          aria-label={`Ingredient ${i + 1} quantity`}
+          value={row.qty}
+          class={rowInput}
+        />
+        <input
+          name={`ing-unit-${i}`}
+          type="text"
+          maxlength="20"
+          placeholder="Unit"
+          aria-label={`Ingredient ${i + 1} unit`}
+          value={row.unit}
+          class={rowInput}
+        />
+        <input
+          name={`ing-note-${i}`}
+          type="text"
+          maxlength="200"
+          placeholder="Note (optional)"
+          aria-label={`Ingredient ${i + 1} note`}
+          value={row.note}
+          class={`col-span-2 ${rowInput}`}
+        />
+        <button
+          type="button"
+          data-remove-row
+          hidden
+          class="col-span-2 cursor-pointer justify-self-start border-0 bg-transparent p-0 font-sans text-[11px] uppercase tracking-[0.2em] text-muted"
+        >
+          Remove
+        </button>
+      </div>
+    ))}
+  </div>
+  <button
+    type="button"
+    data-add-row
+    hidden
+    class="mt-4 cursor-pointer border border-hairline bg-surface px-4 py-2 font-sans text-xs uppercase tracking-[0.2em] text-ink"
+  >
+    + Add ingredient
+  </button>
+  <template data-row-template>
+    <div data-ingredient-row class="mt-4 grid grid-cols-2 gap-4 border-t border-hairline pt-4">
+      <input
+        name="ing-name-__INDEX__"
+        type="text"
+        maxlength="100"
+        list="canonical-ingredients"
+        placeholder="Ingredient"
+        aria-label="Ingredient __N__ name"
+        class={`col-span-2 ${rowInput}`}
+      />
+      <input
+        name="ing-qty-__INDEX__"
+        type="text"
+        inputmode="decimal"
+        placeholder="Qty"
+        aria-label="Ingredient __N__ quantity"
+        class={rowInput}
+      />
+      <input
+        name="ing-unit-__INDEX__"
+        type="text"
+        maxlength="20"
+        placeholder="Unit"
+        aria-label="Ingredient __N__ unit"
+        class={rowInput}
+      />
+      <input
+        name="ing-note-__INDEX__"
+        type="text"
+        maxlength="200"
+        placeholder="Note (optional)"
+        aria-label="Ingredient __N__ note"
+        class={`col-span-2 ${rowInput}`}
+      />
+      <button
+        type="button"
+        data-remove-row
+        class="col-span-2 cursor-pointer justify-self-start border-0 bg-transparent p-0 font-sans text-[11px] uppercase tracking-[0.2em] text-muted"
+      >
+        Remove
+      </button>
+    </div>
+  </template>
+
+  <h2 class={`mt-8 ${label}`}>Tags</h2>
+  <div class="mt-4 grid grid-cols-2 gap-2">
+    {allTags.map((tag) => (
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
+        <input type="checkbox" name="tags" value={tag.slug} checked={checkedSlugs.has(tag.slug)} />
+        {tag.name}
+      </label>
+    ))}
+  </div>
+  <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
+
+  <ImageField replace={imageReplace} />
+  {fieldErrors.image && <p id="image-error" class={fieldError}>{fieldErrors.image}</p>}
+
+  <div class="sticky bottom-0 -mx-6 mt-8 border-t border-hairline bg-bg px-6 py-3">
+    <button
+      type="submit"
+      class="w-full cursor-pointer border border-ink bg-ink py-3 font-sans text-xs uppercase tracking-[0.2em] text-bg hover:opacity-90"
+    >
+      {submitLabel}
+    </button>
+  </div>
+</form>
+
+<script>
+  import './ingredient-rows.ts';
+</script>

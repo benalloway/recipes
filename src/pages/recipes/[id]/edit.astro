@@ -1,16 +1,25 @@
 ---
 import Base from '../../../layouts/Base.astro';
-import ImageField from '../../../components/ImageField.astro';
+import RecipeForm from '../../../components/RecipeForm.astro';
 import { getBlobs } from '../../../lib/adapters/blobs';
 import { getDb } from '../../../lib/adapters/db';
-import { IMAGE_ERROR_MESSAGES, readImageUpload, storeRecipeImage } from '../../../lib/images';
+import { readImageUpload, storeRecipeImage } from '../../../lib/images';
 import {
-  MAX_INGREDIENT_ROWS,
-  RecipeValidationError,
+  fieldForErrorCode,
+  FORM_ERROR_MESSAGES,
+  padIngredientRows,
+  snapshotRecipeForm,
+  valuesFromDetail,
+  type FormErrorCode,
+  type RecipeFormField,
+  type RecipeFormValues,
+} from '../../../lib/recipe-form';
+import {
   appendVersion,
-  formatQuantity,
   getRecipeDetail,
+  INGREDIENT_FORM_ROWS,
   parseRecipeForm,
+  RecipeValidationError,
 } from '../../../lib/recipes';
 
 const session = Astro.locals.session;
@@ -23,11 +32,31 @@ const rawId = Astro.params.id ?? '';
 const id = Number(rawId);
 let postNotFound = false;
 
+// Submitted values to re-render when validation fails (422, nothing wiped).
+let failed: { values: RecipeFormValues; fieldErrors: Partial<Record<RecipeFormField, string>>; summary: string } | null =
+  null;
+// Deep-linkable `?error=` code for GETs (fresh POST failures take precedence).
+let linkedError: FormErrorCode | null = null;
+
+function toState(
+  values: RecipeFormValues,
+  code: FormErrorCode,
+): {
+  values: RecipeFormValues;
+  fieldErrors: Partial<Record<RecipeFormField, string>>;
+  summary: string;
+} {
+  const message = FORM_ERROR_MESSAGES[code];
+  const field = fieldForErrorCode(code);
+  return { values, fieldErrors: field ? { [field]: message } : {}, summary: message };
+}
+
 if (Astro.request.method === 'POST') {
   let form: FormData;
   try {
     form = await Astro.request.formData();
   } catch {
+    // Unreadable body: nothing to re-render, keep the deep-linkable code.
     return Astro.redirect(`/recipes/${rawId}/edit?error=unknown`, 303);
   }
   const knownTagSlugs = new Set(
@@ -50,9 +79,19 @@ if (Astro.request.method === 'POST') {
     }
   } catch (err) {
     if (err instanceof RecipeValidationError) {
-      return Astro.redirect(`/recipes/${rawId}/edit?error=${err.code}`, 303);
+      // Re-render with everything typed intact + an inline error (422).
+      Astro.response.status = 422;
+      const values = snapshotRecipeForm(form);
+      values.ingredients = padIngredientRows(values.ingredients, INGREDIENT_FORM_ROWS);
+      failed = toState(values, err.code);
+    } else {
+      throw err;
     }
-    throw err;
+  }
+} else {
+  const error = Astro.url.searchParams.get('error') as FormErrorCode | null;
+  if (error && FORM_ERROR_MESSAGES[error]) {
+    linkedError = error;
   }
 }
 
@@ -61,43 +100,29 @@ if (!detail) {
   Astro.response.status = 404;
 }
 
-const params = Astro.url.searchParams;
-const error = params.get('error');
+const canonicalIngredients =
+  ((await db.prepare('SELECT name FROM ingredients ORDER BY name LIMIT 500').all<{ name: string }>()).results ?? []).map(
+    (row) => row.name,
+  );
+const allTags =
+  ((await db.prepare('SELECT name, slug FROM tags ORDER BY name').all<{ name: string; slug: string }>()).results ??
+    []);
 
-const ERRORS: Record<string, string> = {
-  title: 'Title is required (1–200 characters).',
-  servings: 'Servings must be a number above 0.',
-  ingredients: 'Check ingredient rows: names required, quantities numeric.',
-  instructions: 'At least one instruction step is required.',
-  ...IMAGE_ERROR_MESSAGES,
-};
-const errorMessage = error ? (ERRORS[error] ?? 'Something went wrong. Try again.') : null;
-
-const canonicalIngredients = detail
-  ? (
-      (await db.prepare('SELECT name FROM ingredients ORDER BY name LIMIT 500').all<{ name: string }>())
-        .results ?? []
-    ).map((row) => row.name)
-  : [];
-const allTags = detail
-  ? (
-      (await db.prepare('SELECT name, slug FROM tags ORDER BY name').all<{ name: string; slug: string }>())
-        .results ?? []
-    )
-  : [];
-const checkedSlugs = new Set((detail?.tags ?? []).map((tag) => tag.slug));
-// Existing rows in position order + up to 4 blank rows for additions,
-// capped so the form never renders more rows than the parser reads.
-const existingRows = detail?.ingredients ?? [];
-const blankCount = Math.max(0, Math.min(4, MAX_INGREDIENT_ROWS - existingRows.length));
-const formRows = [...existingRows];
-for (let i = 0; i < blankCount; i++) {
-  formRows.push({ name: '', quantity: null, unit: null, note: null });
+// Fresh POST failure wins; otherwise the head version; otherwise the linked code.
+const values: RecipeFormValues | null =
+  failed?.values ?? (detail ? valuesFromDetail(detail) : null);
+let fieldErrors: Partial<Record<RecipeFormField, string>> = failed?.fieldErrors ?? {};
+let summaryError: string | null = failed?.summary ?? null;
+if (!failed && linkedError && detail) {
+  const message = FORM_ERROR_MESSAGES[linkedError];
+  const field = fieldForErrorCode(linkedError);
+  summaryError = message;
+  fieldErrors = field ? { [field]: message } : {};
 }
 ---
 
 {
-  !detail ? (
+  !detail || !values ? (
     <Base title="Not found">
       <main class="mx-auto max-w-xl px-6 py-16">
         <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">404 — Not found</p>
@@ -119,118 +144,18 @@ for (let i = 0; i < blankCount; i++) {
           </a>
         </p>
         <h1 class="mt-4 text-2xl font-light tracking-tight">Edit recipe</h1>
+        <p class="mt-2 font-hand text-lg text-muted">What changed? Future-you will thank you.</p>
 
-        {errorMessage && (
-          <div class="mt-6 border border-hairline bg-surface px-6 py-4">
-            <p class="text-sm text-ink">{errorMessage}</p>
-          </div>
-        )}
-
-        <form method="post" action={`/recipes/${detail.id}/edit`} enctype="multipart/form-data" class="mt-8">
-          <label for="title" class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-            Title
-          </label>
-          <input
-            id="title"
-            name="title"
-            type="text"
-            required
-            maxlength="200"
-            value={detail.title}
-            class="mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          />
-
-          <label for="servings" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-            Servings (blank for none)
-          </label>
-          <input
-            id="servings"
-            name="servings"
-            type="text"
-            inputmode="decimal"
-            value={detail.servings !== null ? formatQuantity(detail.servings) : ''}
-            class="mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          />
-
-          <label for="instructions" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-            Instructions (one step per line)
-          </label>
-          <textarea
-            id="instructions"
-            name="instructions"
-            required
-            rows="6"
-            class="mt-2 w-full border border-hairline bg-transparent px-4 py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          >{detail.instructions.join('\n')}</textarea>
-
-          <h2 class="mt-8 text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Ingredients</h2>
-          <datalist id="canonical-ingredients">
-            {canonicalIngredients.map((name) => (
-              <option value={name} />
-            ))}
-          </datalist>
-          {formRows.map((ingredient, i) => (
-            <div class="mt-4 grid grid-cols-2 gap-4 border-t border-hairline pt-4">
-              <input
-                name={`ing-name-${i}`}
-                type="text"
-                maxlength="100"
-                list="canonical-ingredients"
-                value={ingredient.name}
-                placeholder="Ingredient"
-                aria-label={`Ingredient ${i + 1} name`}
-                class="col-span-2 w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-              />
-              <input
-                name={`ing-qty-${i}`}
-                type="text"
-                inputmode="decimal"
-                value={ingredient.quantity !== null ? formatQuantity(ingredient.quantity) : ''}
-                placeholder="Qty"
-                aria-label={`Ingredient ${i + 1} quantity`}
-                class="w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-              />
-              <input
-                name={`ing-unit-${i}`}
-                type="text"
-                maxlength="20"
-                value={ingredient.unit ?? ''}
-                placeholder="Unit"
-                aria-label={`Ingredient ${i + 1} unit`}
-                class="w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-              />
-              <input
-                name={`ing-note-${i}`}
-                type="text"
-                maxlength="200"
-                value={ingredient.note ?? ''}
-                placeholder="Note (optional)"
-                aria-label={`Ingredient ${i + 1} note`}
-                class="col-span-2 w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-              />
-            </div>
-          ))}
-
-          <h2 class="mt-8 text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Tags</h2>
-          <div class="mt-4 grid grid-cols-2 gap-2">
-            {allTags.map((tag) => (
-              <label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
-                <input type="checkbox" name="tags" value={tag.slug} checked={checkedSlugs.has(tag.slug)} />
-                {tag.name}
-              </label>
-            ))}
-          </div>
-          <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
-
-          <ImageField replace />
-
-          <button
-            type="submit"
-            class="mt-8 w-full cursor-pointer border border-ink bg-ink py-3 font-sans text-xs uppercase tracking-[0.2em] text-bg hover:opacity-90"
-          >
-            Save changes
-          </button>
-        </form>
+        <RecipeForm
+          action={`/recipes/${detail.id}/edit`}
+          submitLabel="Save changes"
+          values={values}
+          fieldErrors={fieldErrors}
+          summaryError={summaryError}
+          allTags={allTags}
+          canonicalIngredients={canonicalIngredients}
+          imageReplace={true}
+        />
       </main>
     </Base>
   )

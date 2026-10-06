@@ -1,15 +1,20 @@
 ---
 import Base from '../../layouts/Base.astro';
-import ImageField from '../../components/ImageField.astro';
+import RecipeForm from '../../components/RecipeForm.astro';
 import { getBlobs } from '../../lib/adapters/blobs';
 import { getDb } from '../../lib/adapters/db';
-import { IMAGE_ERROR_MESSAGES, readImageUpload, storeRecipeImage } from '../../lib/images';
+import { readImageUpload, storeRecipeImage } from '../../lib/images';
 import {
-  INGREDIENT_FORM_ROWS,
-  RecipeValidationError,
-  createRecipe,
-  parseRecipeForm,
-} from '../../lib/recipes';
+  blankRecipeFormValues,
+  fieldForErrorCode,
+  FORM_ERROR_MESSAGES,
+  padIngredientRows,
+  snapshotRecipeForm,
+  type FormErrorCode,
+  type RecipeFormField,
+  type RecipeFormValues,
+} from '../../lib/recipe-form';
+import { createRecipe, INGREDIENT_FORM_ROWS, parseRecipeForm, RecipeValidationError } from '../../lib/recipes';
 
 const session = Astro.locals.session;
 if (!session) {
@@ -18,11 +23,23 @@ if (!session) {
 
 const db = getDb(Astro.locals);
 
+let values: RecipeFormValues = blankRecipeFormValues();
+let fieldErrors: Partial<Record<RecipeFormField, string>> = {};
+let summaryError: string | null = null;
+
+function applyError(code: FormErrorCode): void {
+  const message = FORM_ERROR_MESSAGES[code];
+  const field = fieldForErrorCode(code);
+  summaryError = message;
+  fieldErrors = field ? { [field]: message } : {};
+}
+
 if (Astro.request.method === 'POST') {
   let form: FormData;
   try {
     form = await Astro.request.formData();
   } catch {
+    // Unreadable body: nothing to re-render, keep the deep-linkable code.
     return Astro.redirect('/recipes/new?error=unknown', 303);
   }
   const knownTagSlugs = new Set(
@@ -40,23 +57,22 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect(`/recipes/${id}`, 303);
   } catch (err) {
     if (err instanceof RecipeValidationError) {
-      return Astro.redirect(`/recipes/new?error=${err.code}`, 303);
+      // Re-render with everything typed intact + an inline error (422).
+      Astro.response.status = 422;
+      values = snapshotRecipeForm(form);
+      values.ingredients = padIngredientRows(values.ingredients, INGREDIENT_FORM_ROWS);
+      applyError(err.code);
+    } else {
+      throw err;
     }
-    throw err;
+  }
+} else {
+  // Deep-linkable `?error=` codes (validation copy lives in one place).
+  const error = Astro.url.searchParams.get('error') as FormErrorCode | null;
+  if (error && FORM_ERROR_MESSAGES[error]) {
+    applyError(error);
   }
 }
-
-const params = Astro.url.searchParams;
-const error = params.get('error');
-
-const ERRORS: Record<string, string> = {
-  title: 'Title is required (1–200 characters).',
-  servings: 'Servings must be a number above 0.',
-  ingredients: 'Check ingredient rows: names required, quantities numeric.',
-  instructions: 'At least one instruction step is required.',
-  ...IMAGE_ERROR_MESSAGES,
-};
-const errorMessage = error ? (ERRORS[error] ?? 'Something went wrong. Try again.') : null;
 
 const canonicalIngredients =
   ((await db.prepare('SELECT name FROM ingredients ORDER BY name LIMIT 500').all<{ name: string }>()).results ?? []).map(
@@ -65,7 +81,6 @@ const canonicalIngredients =
 const allTags =
   ((await db.prepare('SELECT name, slug FROM tags ORDER BY name').all<{ name: string; slug: string }>()).results ??
     []);
-const rows = Array.from({ length: INGREDIENT_FORM_ROWS }, (_, i) => i);
 ---
 
 <Base title="New recipe">
@@ -76,116 +91,17 @@ const rows = Array.from({ length: INGREDIENT_FORM_ROWS }, (_, i) => i);
       </a>
     </p>
     <h1 class="mt-4 text-2xl font-light tracking-tight">New recipe</h1>
+    <p class="mt-2 font-hand text-lg text-muted">Good recipes are written in pencil — taste as you go.</p>
 
-    {
-      errorMessage && (
-        <div class="mt-6 border border-hairline bg-surface px-6 py-4">
-          <p class="text-sm text-ink">{errorMessage}</p>
-        </div>
-      )
-    }
-
-    <form method="post" action="/recipes/new" enctype="multipart/form-data" class="mt-8">
-      <label for="title" class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-        Title
-      </label>
-      <input
-        id="title"
-        name="title"
-        type="text"
-        required
-        maxlength="200"
-        placeholder="Tomato soup"
-        class="mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-      />
-
-      <label for="servings" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-        Servings (blank for none)
-      </label>
-      <input
-        id="servings"
-        name="servings"
-        type="text"
-        inputmode="decimal"
-        placeholder="4"
-        class="mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-      />
-
-      <label for="instructions" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-        Instructions (one step per line)
-      </label>
-      <textarea
-        id="instructions"
-        name="instructions"
-        required
-        rows="6"
-        placeholder="Chop&#10;Simmer"
-        class="mt-2 w-full border border-hairline bg-transparent px-4 py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-      ></textarea>
-
-      <h2 class="mt-8 text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Ingredients</h2>
-      <datalist id="canonical-ingredients">
-        {canonicalIngredients.map((name) => (
-          <option value={name} />
-        ))}
-      </datalist>
-      {rows.map((i) => (
-        <div class="mt-4 grid grid-cols-2 gap-4 border-t border-hairline pt-4">
-          <input
-            name={`ing-name-${i}`}
-            type="text"
-            maxlength="100"
-            list="canonical-ingredients"
-            placeholder="Ingredient"
-            aria-label={`Ingredient ${i + 1} name`}
-            class="col-span-2 w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          />
-          <input
-            name={`ing-qty-${i}`}
-            type="text"
-            inputmode="decimal"
-            placeholder="Qty"
-            aria-label={`Ingredient ${i + 1} quantity`}
-            class="w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          />
-          <input
-            name={`ing-unit-${i}`}
-            type="text"
-            maxlength="20"
-            placeholder="Unit"
-            aria-label={`Ingredient ${i + 1} unit`}
-            class="w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          />
-          <input
-            name={`ing-note-${i}`}
-            type="text"
-            maxlength="200"
-            placeholder="Note (optional)"
-            aria-label={`Ingredient ${i + 1} note`}
-            class="col-span-2 w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          />
-        </div>
-      ))}
-
-      <h2 class="mt-8 text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Tags</h2>
-      <div class="mt-4 grid grid-cols-2 gap-2">
-        {allTags.map((tag) => (
-          <label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
-            <input type="checkbox" name="tags" value={tag.slug} />
-            {tag.name}
-          </label>
-        ))}
-      </div>
-      <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
-
-      <ImageField />
-
-      <button
-        type="submit"
-        class="mt-8 w-full cursor-pointer border border-ink bg-ink py-3 font-sans text-xs uppercase tracking-[0.2em] text-bg hover:opacity-90"
-      >
-        Save recipe
-      </button>
-    </form>
+    <RecipeForm
+      action="/recipes/new"
+      submitLabel="Save recipe"
+      values={values}
+      fieldErrors={fieldErrors}
+      summaryError={summaryError}
+      allTags={allTags}
+      canonicalIngredients={canonicalIngredients}
+      imageReplace={false}
+    />
   </main>
 </Base>

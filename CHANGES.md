@@ -10,6 +10,30 @@ would ever need undoing.
 
 ---
 
+## Unreleased — Cardstock 2 forms (issue #45)
+
+Change: Cardstock forms per ADR-0002 — new + edit POSTs re-render
+422 with all submitted values preserved + inline field errors
+(`role=alert` summary, `aria-describedby` per field) instead of the
+303-wipe; `?error=` codes kept only for deep-linkable GETs and
+unreadable bodies. Shared `RecipeForm` component + pure
+`src/lib/recipe-form.ts` helpers (snapshot/values/error vocabulary)
+replace the duplicated per-page markup; ingredient rows add/remove
+client-side via the `ingredient-rows.ts` island (controls render
+`hidden`, no-JS posts the server rows untouched); submit sits in a
+sticky bottom bar; handwriting marginalia (`font-hand` token, the one
+ADR-0002 face) asides on both forms. Valid create/edit/image paths
+unchanged. `edit_note` column stays unused (future work).
+
+Verify: `npm run check` + `npm run build` green; local e2e via
+`npm run preview` (bad-title/bad-servings/bad-image POSTs 422 with
+echoed values + inline errors on new + edit, valid create/edit 303,
+PNG upload still stamps `image_key`, logged-out 302, `?error=`
+deep link still banners, island bundle served).
+
+Rollback: `npx wrangler rollback` (no schema change; visuals + form
+POST shape only).
+
 ---
 
 ## Unreleased — Cardstock 1 shell (issue #44)
