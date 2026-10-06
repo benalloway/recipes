@@ -1,0 +1,21 @@
+---
+/**
+ * Plate — a user photo with the Cardstock treatment (ADR-0002): restrained
+ * frame, fixed aspect (never unbounded heights), warm paprika tint overlay
+ * at low opacity. Content photos take a meaningful alt (recipe title);
+ * decorative uses pass alt="" explicitly.
+ */
+interface Props {
+  src: string;
+  alt: string;
+}
+
+const { src, alt } = Astro.props;
+---
+
+<figure class="m-0 border border-hairline bg-surface p-2">
+  <span class="relative block aspect-[4/3] w-full overflow-hidden">
+    <img src={src} alt={alt} class="absolute inset-0 h-full w-full object-cover" />
+    <span aria-hidden="true" class="pointer-events-none absolute inset-0 bg-accent opacity-10"></span>
+  </span>
+</figure>

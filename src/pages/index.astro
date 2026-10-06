@@ -19,29 +19,30 @@ const cards = session ? await getDashboard(getDb(Astro.locals), session.userId) 
     }
     <h1 class="mt-4 text-2xl font-light tracking-tight">Recipes</h1>
     {
-      cards.length > 0 ? (
+      !session ? (
+        <div class="mt-8 border border-hairline bg-surface p-6">
+          <p class="text-ink">Your recipes live here once you sign in.</p>
+          <p class="mt-4">
+            <a href="/login" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
+              Sign in to get started →
+            </a>
+          </p>
+        </div>
+      ) : cards.length > 0 ? (
         <div class="mt-8 grid gap-6">
           {cards.map((card) => (
             <RecipeCard card={card} />
           ))}
         </div>
       ) : (
-        <div class="mt-8">
-          <p class="text-ink">No recipes yet.</p>
-          <p class="mt-2 text-muted">Add your first recipe at /recipes/new (arriving in #14).</p>
+        <div class="mt-8 border border-hairline bg-surface p-6">
+          <p class="text-ink">No recipes yet — your shelf is ready when you are.</p>
+          <p class="mt-4">
+            <a href="/recipes/new" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
+              Add your first recipe →
+            </a>
+          </p>
         </div>
-      )
-    }
-    {
-      session && (
-        <form method="post" action="/auth/logout" class="mt-8 border-t border-hairline pt-4">
-          <button
-            type="submit"
-            class="cursor-pointer border-0 bg-transparent p-0 font-sans text-xs uppercase tracking-[0.2em] text-accent"
-          >
-            Log out
-          </button>
-        </form>
       )
     }
   </main>

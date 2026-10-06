@@ -12,6 +12,27 @@ would ever need undoing.
 
 ---
 
+## Unreleased — Cardstock 1 shell (issue #44)
+
+Change: Cardstock shell per ADR-0002 — warmed `@theme` tokens (paper
+`#FAF7F0`, card `#FFFDF8`, rule `#E5DCC9`, ink `#201A15`, muted
+`#8A7F72`, paprika accent `#B4432A`); global nav in `Base` (Recipes /
+Favorites / New + Sign in / Log out, every page); new `Plate` component
+(framed, fixed 4:3 aspect, paprika tint overlay, title alt) used by
+`RecipeCard` and the detail page (no more unbounded `w-full` photos or
+empty content alt); Edit entry link on detail; real empty states with
+entry links on dashboard/favorites/tags; logged-out dashboard renders a
+sign-in CTA branch; stale "arriving in #14" copy purged (dashboard
+logout moved into the nav). Serif titles, calm grid, and the logged-out
+landing stay in #46.
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e
+via `npm run preview` (nav on every route logged in + out, detail
+shows Edit + plate with title alt, logged-out `/` 302s to `/login`,
+empty states on dashboard/favorites/tags).
+
+Rollback: `npx wrangler rollback` (no schema change; visuals only).
+
 ## Unreleased — M3 slice 4: recipe images (issue #16)
 
 Change: signed-in photo upload + serve — `MEDIA` R2 binding live

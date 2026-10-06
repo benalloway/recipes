@@ -1,6 +1,8 @@
 /* Tailwind CSS v4 — CSS-first config.
    Design tokens live in @theme below and generate utilities
    (bg-bg, bg-surface, border-hairline, text-ink, text-muted, text-accent, font-sans).
+   Cardstock (ADR-0002): warmed paper/rule/ink/paprika; sharp corners only
+   (≤2px radius); no new colors, fonts, shadows, or animation without a new ADR.
    Preflight is intentionally NOT imported: the design language keeps
    browser-default rendering for unstyled elements, so the reset would be
    a visual change. Revisit only with an explicit design decision. */
@@ -9,12 +11,12 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @theme {
-  --color-bg: #fbfbf9;
-  --color-surface: #ffffff;
-  --color-hairline: #e3e3e0;
-  --color-ink: #1a1a1a;
-  --color-muted: #8a8a86;
-  --color-accent: #9a8c7c;
+  --color-bg: #faf7f0;
+  --color-surface: #fffdf8;
+  --color-hairline: #e5dcc9;
+  --color-ink: #201a15;
+  --color-muted: #8a7f72;
+  --color-accent: #b4432a;
 
   --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }

@@ -1,5 +1,6 @@
 ---
 import type { RecipeCard as Card } from '../lib/recipes';
+import Plate from './Plate.astro';
 import TagChip from './TagChip.astro';
 
 interface Props {
@@ -15,7 +16,9 @@ const { card } = Astro.props;
   </a>
   {
     card.imageKey ? (
-      <img src={`/media/${card.imageKey}`} alt="" class="mt-4 block w-full" />
+      <div class="mt-4">
+        <Plate src={`/media/${card.imageKey}`} alt={card.title} />
+      </div>
     ) : (
       <div class="mt-4 block h-32 w-full bg-bg" aria-hidden="true" />
     )

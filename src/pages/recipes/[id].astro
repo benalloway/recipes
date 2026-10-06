@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Plate from '../../components/Plate.astro';
 import TagChip from '../../components/TagChip.astro';
 import { getDb } from '../../lib/adapters/db';
 import { formatIngredient, formatQuantity, getRecipeDetail } from '../../lib/recipes';
@@ -35,8 +36,19 @@ const jsonLd = detail
           </a>
         </p>
         <h1 class="mt-4 text-2xl font-light tracking-tight">{detail.title}</h1>
+        <p class="mt-2 text-xs uppercase tracking-[0.2em] text-muted">
+          <a href={`/recipes/${detail.id}/edit`} class="text-accent">
+            Edit recipe
+          </a>
+        </p>
         {detail.servings !== null && <p class="mt-2 text-muted">Serves {formatQuantity(detail.servings)}</p>}
-        {detail.imageKey && <img src={`/media/${detail.imageKey}`} alt="" class="mt-6 block w-full" />}
+        {
+          detail.imageKey && (
+            <div class="mt-6">
+              <Plate src={`/media/${detail.imageKey}`} alt={detail.title} />
+            </div>
+          )
+        }
         <h2 class="mt-8 text-xs font-medium uppercase tracking-[0.2em] text-muted">Ingredients</h2>
         <ul class="mt-2">
           {detail.ingredients.map((ingredient) => (
