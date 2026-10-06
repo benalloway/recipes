@@ -9,6 +9,7 @@
  * never distinguish.
  */
 import type { getDb } from './adapters/db';
+import { nowIso } from './auth';
 
 /** D1 handle type, derived from the adapter — app code never names platform types. */
 type Db = ReturnType<typeof getDb>;
@@ -228,6 +229,25 @@ export async function toggleFavorite(db: Db, userId: number, recipeId: number): 
     .bind(userId, recipeId)
     .first<{ is_favorite: number }>();
   return row ? row.is_favorite === 1 : null;
+}
+
+/**
+ * Soft-delete an owned recipe: stamp `deleted_at`, keep every history byte
+ * (versions, ingredients, tags, `user_recipes`, R2 bytes all untouched —
+ * reads already filter `deleted_at IS NULL`). Returns null when the recipe
+ * is missing, not owned, or already deleted (caller renders 404, never
+ * distinguishes). Only the owner can delete — never a `user_recipes`
+ * member, never a fork holder. No undelete in MVP: deleted stays deleted.
+ */
+export async function softDelete(db: Db, userId: number, recipeId: number): Promise<boolean | null> {
+  if (positiveInt(recipeId) === null || positiveInt(userId) === null) return null;
+  const owned = await db
+    .prepare('SELECT id FROM recipes WHERE id = ? AND owner_user_id = ? AND deleted_at IS NULL')
+    .bind(recipeId, userId)
+    .first<{ id: number }>();
+  if (!owned) return null;
+  await db.prepare('UPDATE recipes SET deleted_at = ? WHERE id = ?').bind(nowIso(), recipeId).run();
+  return true;
 }
 
 /** `2.0` renders `2`; non-integers keep their shortest form. */

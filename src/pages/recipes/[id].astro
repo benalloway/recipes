@@ -66,6 +66,22 @@ const jsonLd = detail
             {detail.isFavorite ? '★ Saved' : '☆ Save to favorites'}
           </button>
         </form>
+        <form
+          method="post"
+          action={`/recipes/${detail.id}/delete`}
+          data-confirm={`Delete “${detail.title}”? This hides the recipe everywhere; history is kept.`}
+          class="mt-4"
+        >
+          <button
+            type="submit"
+            class="cursor-pointer border border-hairline bg-surface px-4 py-2 font-sans text-xs uppercase tracking-[0.2em] text-muted"
+          >
+            Delete recipe
+          </button>
+        </form>
+        <script>
+          import '../../components/confirm-dialog.ts';
+        </script>
       </main>
     </Base>
   ) : (

@@ -12,6 +12,23 @@ would ever need undoing.
 
 ---
 
+## Unreleased — M3 slice 5: recipe delete (issue #17)
+
+Change: signed-in recipe soft-delete — `POST /recipes/[id]/delete`
+stamps `deleted_at` via `softDelete` (owner-only; missing / non-owned /
+already-deleted all 404), success 303s to the dashboard. Versions,
+ingredients, tags, `user_recipes`, and R2 bytes retained (reads already
+filter `deleted_at IS NULL`). Detail page gains a separate delete form
+wired to the new `confirm-dialog.ts` island (`form[data-confirm]`
+intercept → native `<dialog>`; no-JS posts immediately).
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e via
+`npm run preview` (logged-out POST 302, delete 303 to `/`, `deleted_at`
+set, dashboard/detail/favorites hide the row, double-delete + missing id
+404, version + `user_recipes` rows retained).
+
+Rollback: `npx wrangler rollback` (no schema change).
+
 ## Unreleased — M3 slice 3: recipe edit (issue #15)
 
 Change: signed-in edit writes a new immutable head version (n+1, old
