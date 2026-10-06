@@ -10,10 +10,8 @@ PLAN.md is the source of truth; milestones are never redefined without the owner
 - New tickets are created with label `needs-triage` and the milestone set.
   **Never apply `ready-for-agent` when publishing.** Promotion to
   `ready-for-agent` is the automation's job: `triage-requested` → adversarial
-  triage → PASS *and* frontier-clear → `ready-for-agent` → implement fires.
-  (Target vocabulary at cutover: triage PASS applies `ready-for-agent` plus
-  `agent:implement`, holds with `agent:blocked`. Until the Phase 4 preflight
-  cutover, the live names are `ready-for-agent` / `blocked`.)
+  triage → PASS *and* frontier-clear → `ready-for-agent` + `agent:implement` →
+  implement fires (held with `agent:blocked` while anything waits).
   (This overrides `to-tickets` step 5's "apply `ready-for-agent` unless
   instructed otherwise", and the vendored `triage` skill's "quick state
   override": you are hereby instructed otherwise. Belt and suspenders: the
@@ -50,9 +48,8 @@ PLAN.md is the source of truth; milestones are never redefined without the owner
 
 or list each edge: `- #13 (detail page this asserts against)`,
 `- external: recipes-media bucket must exist`. Open refs gate execution:
-triage PASS applies `ready-for-agent` plus `blocked` while any edge is open
-(`agent:implement` + `agent:blocked` after the Phase 4 cutover),
-and implement refuses until all edges clear.
+triage PASS applies `ready-for-agent` + `agent:implement` plus `agent:blocked`
+while any edge is open, and implement refuses until all edges clear.
 
 ## `Touches` section (required on every ticket)
 
@@ -64,36 +61,41 @@ and implement refuses until all edges clear.
 
 Repo-relative paths the implementation is expected to change. Triage validates
 the list; the blocked-gate diffs it against files changed by open PRs and
-`ready-for-agent` issues to detect same-file conflicts before implement fires
-(`agent:in-progress`-issue overlap joins the check at the Phase 4 cutover).
+`agent:in-progress` issues to detect same-file conflicts before implement fires.
 `CHANGES.md` need not be listed (always rebase-trivial).
 
 ## Wayfinding operations (how this repo expresses the wayfinder skill)
 
 Map and tickets live as GitHub issues. Hierarchy uses **native sub-issues**;
 execution gating uses **native blocked-by edges**. Body-text `## Blocked by`
-sections remain as human-readable fallback until the preflight cutover lands.
+sections remain as the human-readable record and as the preflight's fallback
+when the native graph is unreachable.
 
 - **Create the map**: `gh issue create --label "wayfinder:map"` with the
   Destination / Notes / Decisions-so-far / Not-yet-specified / Out-of-scope
   body (template `wayfinder-map.md`). Never add triage or implement labels.
 - **Create tickets as sub-issues**: `gh issue create --parent <map> --label
-  "wayfinder:<type>"` (verified on gh 2.102.0; older CLIs need the REST
-  attach fallback below) using templates `wayfinder-research.md`,
+  "wayfinder:<type>"` (needs gh ≥ 2.101.0 for `--parent`; older CLIs need the
+  REST attach fallback below) using templates `wayfinder-research.md`,
   `wayfinder-prototype.md`, `wayfinder-grilling.md`, `wayfinder-task.md`,
   or attach later via `POST /repos/{owner}/{repo}/issues/{map}/sub_issues`
-  with the child's id.
+  with body `{"sub_issue_id": <integer database id of the child>}`.
 - **Blocking between tickets**: native edges via
-  `POST .../issues/{n}/dependencies/blocked_by` with body
-  `{"issue_id": <integer database id>}` — note the id must be the integer
-  database id (from GraphQL `databaseId`), not the `I_...` node id, and `gh
-  api -f` sends strings so pipe typed JSON with `--input -`. Read back with
-  `GET .../dependencies/blocked_by` or `gh issue view <n> --json blockedBy`.
+  `echo '{"issue_id": <integer database id>}' | gh api
+  repos/{owner}/{repo}/issues/{n}/dependencies/blocked_by --input -`
+  — note the id must be the integer database id, not the `I_...` node id.
+  Read it with REST (`gh api repos/{owner}/{repo}/issues/{id} --jq .id`)
+  rather than GraphQL; pipe typed JSON with `--input -` because `gh api -f`
+  sends strings. Read back with `GET .../dependencies/blocked_by` or
+  `gh issue view <n> --json blockedBy`.
 - **Claim**: assign the ticket to yourself before any work (assignee is the
   claim); open + unassigned means unclaimed.
 - **Frontier**: open, unblocked, unclaimed children —
-  `gh api repos/{owner}/{repo}/issues/{map}/sub_issues` filtered by state,
-  labels, assignees, and `blocked_by` emptiness.
+  `gh api repos/{owner}/{repo}/issues/{map}/sub_issues --jq
+  '.[] | select(.state == "open" and .assignees == [] and
+  ((.labels // []) | map(.name) | index("wayfinder:map") | not))'`
+  then drop any whose number appears in another child's `blocked_by`
+  (`GET .../issues/{child}/dependencies/blocked_by`).
 - **Resolve**: post the answer as a resolution comment, close the issue,
   append a gist-link line to the map's Decisions-so-far.
 - **Graduate**: fog patches that sharpen become new sub-issue tickets;

@@ -1,10 +1,9 @@
 # Triage Labels
 
-> **Target Sandcastle vocabulary.** This table describes where the repo is
-> going, not (yet) what the automation runs: `blocked` / `in-progress` /
-> `ai-drafted-feedback` plus `ready-for-agent`-fires-implement remain
-> authoritative until the Phase 4 preflight cutover lands. Do not apply the
-> `agent:*` execution labels expecting workflows to fire before then.
+> This table is the live automation vocabulary. The transition names
+> (`blocked`, `in-progress`, `ai-drafted-feedback`) were retired in the
+> Phase 5 audit (#30): the preflight no longer honors them, and applying
+> one has no effect — use the `agent:*` equivalents.
 
 Skills speak in canonical triage roles; this table maps each role to this
 repo's label string. Sandcastle-format mapping (see `mattpocock/sandcastle`
@@ -25,14 +24,14 @@ Repo automation roles every skill must respect:
 | ---- | ----- | ------- |
 | triage requested | `triage-requested` | Starts the adversarial triage run; removed on verdict. Repo extension — upstream has no counterpart (their triage is skill-driven) |
 | execution trigger | `agent:implement` | Triage PASS applies this (with `ready-for-agent`); implement fires on this label, not on approval alone |
-| review trigger | `agent:review` | Implement applies this to the PR; review runs and marks it ready. Replaces `ai-drafted-feedback` |
+| review trigger | `agent:review` | Implement applies this to the PR; review runs and marks it ready |
 | branch refresh | `agent:update-branch` | Refresh a stale PR branch against `main` |
 | exploration | `agent:explore` | Run the exploration agent on an issue |
-| in-flight | `agent:in-progress` | Claim marker: cloud run or local session active. Implement refuses while present (renamed from `in-progress`) |
-| automation hold | `agent:blocked` | Orthogonal to approval: spec approved but execution waits (open refs, conflicts, failure). Removing it re-fires implement when `agent:implement` is present (renamed from `blocked`) |
+| in-flight | `agent:in-progress` | Claim marker: cloud run or local session active. Implement refuses while present |
+| automation hold | `agent:blocked` | Orthogonal to approval: spec approved but execution waits (open refs, conflicts, failure). Removing it re-fires implement when `agent:implement` is present |
 | external gate | `blocked-external` | Waiting on dashboard/DNS/secret/account action (owner-only) |
 | wayfinder map | `wayfinder:map` | Canonical wayfinder artifact; never carries triage/implement labels |
-| wayfinder ticket | `wayfinder:research` / `prototype` / `grilling` / `task` | Decision tickets; claimed by assignee; never carry triage/implement labels |
+| wayfinder ticket | `wayfinder:research` / `wayfinder:prototype` / `wayfinder:grilling` / `wayfinder:task` | Decision tickets; claimed by assignee; never carry triage/implement labels |
 | backlog | `post-mvp` | Post-MVP scope; never implement from here |
 
 Blocked semantics: `agent:blocked` never replaces `ready-for-agent` — approval

@@ -10,7 +10,7 @@ toward capsule meal planning.
 Key decisions (confirmed with user):
 
 - **Platform:** Cloudflare Workers + D1 (SQLite) + R2 — all free tier
-- **Frontend:** Astro 5 (SSR via Cloudflare adapter) + plain TS islands (no framework)
+- **Frontend:** Astro 7 (SSR via Cloudflare adapter) + plain TS islands (no framework)
 - **Auth MVP:** Email magic link only (Resend free: 3k/mo, 100/day); phone+code UI
   stubbed ("soon" tab), wired later via Twilio (paid)
 - **Sharing:** private by default, share-by-link, others keep read-only reference
@@ -32,7 +32,7 @@ Key decisions (confirmed with user):
 
 Stack:
 
-- Astro 5 + `@astrojs/cloudflare`, SSR mode; static assets served free/unlimited
+- Astro 7 + `@astrojs/cloudflare`, SSR mode; static assets served free/unlimited
 - D1: `recipes-db` (+ local sqlite file via wrangler/miniflare in dev)
 - R2: `recipes-media`
 - Resend for magic-link email; `RESEND_API_KEY` as Worker secret

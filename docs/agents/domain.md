@@ -20,5 +20,12 @@ soft delete (`deleted_at`, never DELETE) / canonical ingredient (match by slug)
  / tag (seeded slugs) / `user_recipes` (bookshelf + `is_favorite`) / capsule
 (ingredient-overlap planning) / island (plain-TS, no framework).
 
+Automation vocabulary (see `docs/agents/triage-labels.md` for the full table):
+map (`wayfinder:map`, the planning artifact) / decision ticket
+(`wayfinder:research` / `prototype` / `grilling` / `task`) / frontier (open,
+unblocked, unclaimed tickets) / claim (`agent:in-progress` or assignee) /
+approval (`ready-for-agent`, spec accepted) vs hold (`agent:blocked`,
+execution waits) / execution trigger (`agent:implement`).
+
 No `GLOSSARY.md`: the list above is the glossary. ADRs are not kept separately;
 decisions with dates live in issue comments and `CHANGES.md` entries.
