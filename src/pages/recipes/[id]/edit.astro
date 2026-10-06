@@ -2,6 +2,7 @@
 import Base from '../../../layouts/Base.astro';
 import { getDb } from '../../../lib/adapters/db';
 import {
+  MAX_INGREDIENT_ROWS,
   RecipeValidationError,
   appendVersion,
   formatQuantity,
@@ -15,14 +16,16 @@ if (!session) {
 }
 
 const db = getDb(Astro.locals);
-const id = Number(Astro.params.id);
+const rawId = Astro.params.id ?? '';
+const id = Number(rawId);
+let postNotFound = false;
 
 if (Astro.request.method === 'POST') {
   let form: FormData;
   try {
     form = await Astro.request.formData();
   } catch {
-    return Astro.redirect(`/recipes/${id}/edit?error=unknown`, 303);
+    return Astro.redirect(`/recipes/${rawId}/edit?error=unknown`, 303);
   }
   const knownTagSlugs = new Set(
     (
@@ -34,18 +37,19 @@ if (Astro.request.method === 'POST') {
     const version = await appendVersion(db, session.userId, id, input);
     if (version === null) {
       Astro.response.status = 404;
+      postNotFound = true;
     } else {
-      return Astro.redirect(`/recipes/${id}`, 303);
+      return Astro.redirect(`/recipes/${rawId}`, 303);
     }
   } catch (err) {
     if (err instanceof RecipeValidationError) {
-      return Astro.redirect(`/recipes/${id}/edit?error=${err.code}`, 303);
+      return Astro.redirect(`/recipes/${rawId}/edit?error=${err.code}`, 303);
     }
     throw err;
   }
 }
 
-const detail = await getRecipeDetail(db, id, session.userId);
+const detail = postNotFound ? null : await getRecipeDetail(db, id, session.userId);
 if (!detail) {
   Astro.response.status = 404;
 }
@@ -69,9 +73,12 @@ const allTags =
   ((await db.prepare('SELECT name, slug FROM tags ORDER BY name').all<{ name: string; slug: string }>()).results ??
     []);
 const checkedSlugs = new Set((detail?.tags ?? []).map((tag) => tag.slug));
-// Existing rows in position order + 4 blank rows for additions.
-const formRows = [...(detail?.ingredients ?? [])];
-for (let i = 0; i < 4; i++) {
+// Existing rows in position order + up to 4 blank rows for additions,
+// capped so the form never renders more rows than the parser reads.
+const existingRows = detail?.ingredients ?? [];
+const blankCount = Math.max(0, Math.min(4, MAX_INGREDIENT_ROWS - existingRows.length));
+const formRows = [...existingRows];
+for (let i = 0; i < blankCount; i++) {
   formRows.push({ name: '', quantity: null, unit: null, note: null });
 }
 ---
@@ -141,9 +148,7 @@ for (let i = 0; i < 4; i++) {
             required
             rows="6"
             class="mt-2 w-full border border-hairline bg-transparent px-4 py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-          >
-            {detail.instructions.join('\n')}
-          </textarea>
+          >{detail.instructions.join('\n')}</textarea>
 
           <h2 class="mt-8 text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Ingredients</h2>
           <datalist id="canonical-ingredients">

@@ -323,8 +323,8 @@ function parseQuantity(raw: string): number | null {
 
 /**
  * Reads the new-recipe form: `title`, `servings`, `instructions` (textarea,
- * one step per line), 8 indexed ingredient rows, repeated `tags` checkboxes
- * filtered to known slugs (unknowns ignored). Fully-blank ingredient rows
+ * one step per line), up to MAX_INGREDIENT_ROWS indexed ingredient rows,
+ * repeated `tags` checkboxes filtered to known slugs (unknowns ignored). Fully-blank ingredient rows
  * are skipped; a partially-filled row with a blank name is invalid.
  * Throws `RecipeValidationError(code)` on any violation.
  */
