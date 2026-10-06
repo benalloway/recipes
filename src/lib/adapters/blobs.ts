@@ -8,5 +8,9 @@ import { getRuntime } from '../runtime';
 
 /** @param {App.Locals} [locals] */
 export function getBlobs(locals) {
-  return getRuntime(locals).MEDIA;
+  const runtime = getRuntime(locals);
+  if (!runtime.MEDIA) {
+    throw new Error('Binding MEDIA missing — check wrangler.jsonc');
+  }
+  return runtime.MEDIA;
 }

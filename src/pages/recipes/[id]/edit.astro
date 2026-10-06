@@ -1,6 +1,8 @@
 ---
 import Base from '../../../layouts/Base.astro';
+import { getBlobs } from '../../../lib/adapters/blobs';
 import { getDb } from '../../../lib/adapters/db';
+import { contentTypeForExtension, readImageUpload } from '../../../lib/images';
 import {
   MAX_INGREDIENT_ROWS,
   RecipeValidationError,
@@ -8,6 +10,7 @@ import {
   formatQuantity,
   getRecipeDetail,
   parseRecipeForm,
+  setHeadImageKey,
 } from '../../../lib/recipes';
 
 const session = Astro.locals.session;
@@ -34,11 +37,19 @@ if (Astro.request.method === 'POST') {
   );
   try {
     const input = parseRecipeForm(form, knownTagSlugs);
+    const upload = await readImageUpload(form);
     const version = await appendVersion(db, session.userId, id, input);
     if (version === null) {
       Astro.response.status = 404;
       postNotFound = true;
     } else {
+      if (upload) {
+        const key = `recipes/${id}/${crypto.randomUUID()}.${upload.extension}`;
+        await getBlobs(Astro.locals).put(key, upload.bytes, {
+          httpMetadata: { contentType: contentTypeForExtension(upload.extension) },
+        });
+        await setHeadImageKey(db, id, key);
+      }
       return Astro.redirect(`/recipes/${rawId}`, 303);
     }
   } catch (err) {
@@ -62,6 +73,8 @@ const ERRORS: Record<string, string> = {
   servings: 'Servings must be a number above 0.',
   ingredients: 'Check ingredient rows: names required, quantities numeric.',
   instructions: 'At least one instruction step is required.',
+  'image-type': 'Photo must be JPEG, PNG, or WebP.',
+  'image-size': 'Photos must be 5 MB or smaller.',
 };
 const errorMessage = error ? (ERRORS[error] ?? 'Something went wrong. Try again.') : null;
 
@@ -118,7 +131,7 @@ for (let i = 0; i < blankCount; i++) {
           </div>
         )}
 
-        <form method="post" action={`/recipes/${detail.id}/edit`} class="mt-8">
+        <form method="post" action={`/recipes/${detail.id}/edit`} enctype="multipart/form-data" class="mt-8">
           <label for="title" class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
             Title
           </label>
@@ -213,6 +226,21 @@ for (let i = 0; i < blankCount; i++) {
             ))}
           </div>
           <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
+
+          <label for="image" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+            Photo (optional — replaces the current photo)
+          </label>
+          <input
+            id="image"
+            name="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            data-image-input
+            class="mt-2 w-full font-sans text-sm text-ink"
+          />
+          <script>
+            import '../../../components/image-input.ts';
+          </script>
 
           <button
             type="submit"

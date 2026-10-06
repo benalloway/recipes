@@ -238,6 +238,18 @@ export async function toggleFavorite(db: Db, userId: number, recipeId: number): 
 }
 
 /**
+ * Stamp the head version's `image_key` after an R2 upload. Called with the
+ * just-written recipe id so the key always lands on the current head.
+ * Old R2 bytes are retained on replace (no cleanup in MVP).
+ */
+export async function setHeadImageKey(db: Db, recipeId: number, imageKey: string): Promise<void> {
+  await db
+    .prepare('UPDATE recipe_versions SET image_key = ? WHERE id = (SELECT head_version_id FROM recipes WHERE id = ?)')
+    .bind(imageKey, recipeId)
+    .run();
+}
+
+/**
  * Soft-delete an owned recipe: stamp `deleted_at`, keep every history byte
  * (versions, ingredients, tags, `user_recipes`, R2 bytes all untouched —
  * reads already filter `deleted_at IS NULL`). Returns null when the recipe
@@ -290,7 +302,9 @@ export interface RecipeInput {
 }
 
 export class RecipeValidationError extends Error {
-  constructor(readonly code: 'title' | 'servings' | 'ingredients' | 'instructions') {
+  constructor(
+    readonly code: 'title' | 'servings' | 'ingredients' | 'instructions' | 'image-type' | 'image-size',
+  ) {
     super(code);
   }
 }

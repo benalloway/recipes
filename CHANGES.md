@@ -12,6 +12,28 @@ would ever need undoing.
 
 ---
 
+## Unreleased — M3 slice 4: recipe images (issue #16)
+
+Change: signed-in photo upload + serve — `MEDIA` R2 binding live
+(`recipes-media`), `getBlobs` throws when the binding is missing. The
+create/edit forms gain an optional `image` file input (`multipart`,
+`image-input.ts` island downscales the long edge to ≤1600px JPEG client-side;
+no-JS uploads the raw file). Server validates the received bytes (magic
+sniff jpeg/png/webp, 5 MB cap → `?error=image-type|image-size`), stores
+`recipes/<recipeId>/<uuid>.<ext>` via `MEDIA.put`, and stamps `image_key`
+on the just-written head version (NULL on create / carried forward on edit
+when no file chosen; old R2 bytes retained on replace — no cleanup in MVP).
+`GET /media/*` serves only the head version's bytes to the owner (else the
+same recipe 404), `Cache-Control: private, max-age=3153600`.
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e via
+`npm run preview` (valid PNG upload 303 → `image_key` set → media 200 with
+`image/png` + private cache, wrong-type/oversize 303s with no `image_key`,
+logged-out media 302, other-user + bogus key 404, detail shows `/media/`).
+
+Rollback: `npx wrangler rollback` (no schema change; orphan R2 bytes from
+replaced photos stay in the bucket).
+
 ## Unreleased — M3 slice 5: recipe delete (issue #17)
 
 Change: signed-in recipe soft-delete — `POST /recipes/[id]/delete`
