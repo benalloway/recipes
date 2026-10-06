@@ -1,41 +1,15 @@
 # Triage Labels
 
-> This table is the live automation vocabulary. The transition names
-> (`blocked`, `in-progress`, `ai-drafted-feedback`) were retired in the
-> Phase 5 audit (#30): the preflight no longer honors them, and applying
-> one has no effect — use the `agent:*` equivalents.
+The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
 
-Skills speak in canonical triage roles; this table maps each role to this
-repo's label string. Sandcastle-format mapping (see `mattpocock/sandcastle`
-`docs/agents/triage.md`): left column is the skills vocabulary, right column
-is what this tracker actually uses.
+| Label in mattpocock/skills | Label in our tracker | Meaning                                  |
+| -------------------------- | -------------------- | ---------------------------------------- |
+| `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
+| `needs-info`               | `needs-info`         | Waiting on reporter for more information |
+| `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
+| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
+| `wontfix`                  | `wontfix`            | Will not be actioned                     |
 
-| Label in mattpocock/skills | Label in our tracker | Meaning |
-| -------------------------- | -------------------- | ------- |
-| `needs-triage` | `needs-triage` | Spec not yet adversarially reviewed |
-| `needs-info` | `needs-info` | Waiting on reporter for more information |
-| `ready-for-agent` | `ready-for-agent` | Spec approved (approval only — execution needs `agent:implement`) |
-| `ready-for-human` | `ready-for-human` | Owner-only work; automation kill switch (stops every loop) |
-| `wontfix` | `wontfix` | Will not be actioned |
+When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
-Repo automation roles every skill must respect:
-
-| Role | Label | Meaning |
-| ---- | ----- | ------- |
-| triage requested | `triage-requested` | Starts the adversarial triage run; removed on verdict. Repo extension — upstream has no counterpart (their triage is skill-driven) |
-| execution trigger | `agent:implement` | Triage PASS applies this (with `ready-for-agent`); implement fires on this label, not on approval alone |
-| review trigger | `agent:review` | Implement applies this to the PR; review runs and marks it ready |
-| branch refresh | `agent:update-branch` | Refresh a stale PR branch against `main` |
-| exploration | `agent:explore` | Run the exploration agent on an issue |
-| in-flight | `agent:in-progress` | Claim marker: cloud run or local session active. Implement refuses while present |
-| automation hold | `agent:blocked` | Orthogonal to approval: spec approved but execution waits (open refs, conflicts, failure). Removing it re-fires implement when `agent:implement` is present |
-| external gate | `blocked-external` | Waiting on dashboard/DNS/secret/account action (owner-only) |
-| wayfinder map | `wayfinder:map` | Canonical wayfinder artifact; never carries triage/implement labels |
-| wayfinder ticket | `wayfinder:research` / `wayfinder:prototype` / `wayfinder:grilling` / `wayfinder:task` | Decision tickets; claimed by assignee; never carry triage/implement labels |
-| backlog | `post-mvp` | Post-MVP scope; never implement from here |
-
-Blocked semantics: `agent:blocked` never replaces `ready-for-agent` — approval
-and hold are independent. Implement runs only when `agent:implement` is present
-AND `agent:blocked` is absent. Wayfinder issues must never carry
-`triage-requested`, `ready-for-agent`, or `agent:implement`; the implement
-preflight refuses any `wayfinder:*` label outright.
+Edit the right-hand column to match whatever vocabulary you actually use.

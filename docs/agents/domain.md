@@ -1,31 +1,51 @@
-# Domain Docs (single-context)
+# Domain Docs
 
-One context for the whole repo. Skills needing domain language read these in
-order; do not invent synonyms for terms defined here.
+How the engineering skills should consume this repo's domain documentation when exploring the codebase.
 
-1. `PLAN.md` — the source of truth: product summary, architecture, schema
-   sketch, pages/routes, design system, milestones (M0–M8), costs, out of scope.
-2. `migrations/*.sql` — the canonical schema (plain SQLite, portable). PLAN.md
-   sketches; migrations rule on conflicts.
-3. `scripts/seed.sql` — canonical tags + ingredients (slugs are the join keys).
-4. `AGENTS.md` — agent protocol: stack invariants, portability boundary
-   (`src/lib/runtime.ts`, `src/lib/adapters/*`), commands, issue→PR workflow,
-   autonomous pipeline + loop guards, deploy policy.
-5. `CONTRIBUTING.md` — human-side flow and the `ready-for-agent` bar.
-6. `.github/workflows/README.md` — automation trigger map.
+## Before exploring, read these
 
-Core vocabulary: recipe (pointer row) / version (`recipe_versions`, immutable,
-`n`, `head_version_id`) / revert (= new version) / fork (lineage columns) /
-soft delete (`deleted_at`, never DELETE) / canonical ingredient (match by slug)
- / tag (seeded slugs) / `user_recipes` (bookshelf + `is_favorite`) / capsule
-(ingredient-overlap planning) / island (plain-TS, no framework).
+- **`GLOSSARY.md`** at the repo root, or
+- **`GLOSSARY-MAP.md`** at the repo root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
+- **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
 
-Automation vocabulary (see `docs/agents/triage-labels.md` for the full table):
-map (`wayfinder:map`, the planning artifact) / decision ticket
-(`wayfinder:research` / `prototype` / `grilling` / `task`) / frontier (open,
-unblocked, unclaimed tickets) / claim (`agent:in-progress` or assignee) /
-approval (`ready-for-agent`, spec accepted) vs hold (`agent:blocked`,
-execution waits) / execution trigger (`agent:implement`).
+If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 
-No `GLOSSARY.md`: the list above is the glossary. ADRs are not kept separately;
-decisions with dates live in issue comments and `CHANGES.md` entries.
+## File structure
+
+Single-context repo (most repos):
+
+```
+/
+├── GLOSSARY.md
+├── docs/adr/
+│   ├── 0001-event-sourced-orders.md
+│   └── 0002-postgres-for-write-model.md
+└── src/
+```
+
+Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
+
+```
+/
+├── GLOSSARY-MAP.md
+├── docs/adr/                          ← system-wide decisions
+└── src/
+    ├── ordering/
+    │   ├── GLOSSARY.md
+    │   └── docs/adr/                  ← context-specific decisions
+    └── billing/
+        ├── GLOSSARY.md
+        └── docs/adr/
+```
+
+## Use the glossary's vocabulary
+
+When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
+
+If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
+
+## Flag ADR conflicts
+
+If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+
+> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_

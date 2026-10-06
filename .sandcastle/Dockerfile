@@ -1,19 +1,37 @@
-# Sandcastle agent sandbox for the recipes repo.
-# Build once on the owner machine: docker build -t sandcastle:recipes .sandcastle/
-# Rebuild when Node/gh/opencode versions need to move. Never push this image anywhere.
-FROM node:24-bookworm-slim
+FROM node:22-bookworm
 
-RUN apt-get update && apt-get install -y --no-install-recommends git curl gnupg ca-certificates \
-  && mkdir -p /etc/apt/keyrings \
-  && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
-  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-  && apt-get update && apt-get install -y --no-install-recommends gh \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+  git \
+  curl \
+  jq \
   && rm -rf /var/lib/apt/lists/*
 
-# OpenCode CLI (the agent binary Sandcastle drives inside the sandbox).
-# Pinned for reproducible images — bump deliberately, then rebuild.
-RUN npm i -g opencode-ai@1.18.34
+# Install GitHub CLI
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+  | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+  && apt-get update && apt-get install -y gh \
+  && rm -rf /var/lib/apt/lists/*
 
-# The agent runs as root inside the container by default; repo files are
-# bind-mounted from a git worktree, so host ownership is preserved on write.
-WORKDIR /repo
+# Build-args for UID/GID alignment: sandcastle docker build-image
+# defaults these to the host user's UID/GID so image-built files
+# and bind-mounted files share an owner without runtime chown.
+ARG AGENT_UID=1000
+ARG AGENT_GID=1000
+
+# Rename the base image's "node" user to "agent" and align UID/GID.
+RUN groupmod -o -g $AGENT_GID node && usermod -o -u $AGENT_UID -g $AGENT_GID -d /home/agent -m -l agent node
+
+# Install OpenCode CLI (run as root before USER agent)
+RUN npm install -g opencode-ai@latest
+
+USER ${AGENT_UID}:${AGENT_GID}
+
+WORKDIR /home/agent
+
+# In worktree sandbox mode, Sandcastle bind-mounts the git worktree at ${SANDBOX_REPO_DIR}
+# and overrides the working directory to ${SANDBOX_REPO_DIR} at container start.
+# Structure your Dockerfile so that ${SANDBOX_REPO_DIR} can serve as the project root.
+ENTRYPOINT ["sleep", "infinity"]
