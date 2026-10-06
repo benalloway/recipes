@@ -1,6 +1,7 @@
 /**
- * Recipe reads — dashboard, detail, tag, and favorites queries plus the
- * favorite toggle.
+ * Recipe reads + create path — dashboard, detail, tag, and favorites
+ * queries, the favorite toggle, and the M3b create pipeline
+ * (validate → parse form → insert recipe + head version + rows).
  *
  * No platform imports: the db adapter only, so this file stays portable
  * (same rule as `src/lib/auth.ts`). Ownership is always enforced here —
@@ -246,4 +247,209 @@ export function formatIngredient(ingredient: RecipeIngredient): string {
   let line = parts.join(' ');
   if (ingredient.note) line += ` (${ingredient.note})`;
   return line.replace(/\s+/g, ' ').trim();
+}
+
+// ---------------------------------------------------------------------------
+// Create path (M3b). Validation is pure; only `createRecipe` touches the db.
+// ---------------------------------------------------------------------------
+
+export interface IngredientInput {
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  note: string | null;
+}
+
+export interface RecipeInput {
+  title: string;
+  servings: number | null;
+  instructions: string[];
+  ingredients: IngredientInput[];
+  tagSlugs: string[];
+}
+
+export class RecipeValidationError extends Error {
+  constructor(readonly code: 'title' | 'servings' | 'ingredients' | 'instructions') {
+    super(code);
+  }
+}
+
+export const MAX_TITLE_LENGTH = 200;
+export const MAX_SERVINGS = 1000;
+export const MAX_INSTRUCTION_LINES = 100;
+export const MAX_INSTRUCTION_LENGTH = 2000;
+export const MAX_INGREDIENT_ROWS = 50;
+export const MAX_INGREDIENT_NAME_LENGTH = 100;
+export const MAX_UNIT_LENGTH = 20;
+export const MAX_NOTE_LENGTH = 200;
+export const MAX_QUANTITY = 1e6;
+export const INGREDIENT_FORM_ROWS = 8;
+
+/**
+ * Canonical slug: lowercase, non-alphanumeric runs become `-`, no leading
+ * or trailing dashes. Non-ASCII runs become `-` (documented; revisit only
+ * if capsule queries need it).
+ */
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** Keeps order, dedups, drops anything not in `known`. */
+export function filterKnownSlugs(candidates: string[], known: string[]): string[] {
+  const knownSet = new Set(known);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const candidate of candidates) {
+    if (knownSet.has(candidate) && !seen.has(candidate)) {
+      seen.add(candidate);
+      out.push(candidate);
+    }
+  }
+  return out;
+}
+
+function parseQuantity(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed === '') return null;
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || value < 0 || value > MAX_QUANTITY) {
+    throw new RecipeValidationError('ingredients');
+  }
+  return value;
+}
+
+/**
+ * Reads the new-recipe form: `title`, `servings`, `instructions` (textarea,
+ * one step per line), 8 indexed ingredient rows, repeated `tags` checkboxes
+ * filtered to known slugs (unknowns ignored). Fully-blank ingredient rows
+ * are skipped; a partially-filled row with a blank name is invalid.
+ * Throws `RecipeValidationError(code)` on any violation.
+ */
+export function parseRecipeForm(form: FormData, knownTagSlugs: Set<string>): RecipeInput {
+  const title = String(form.get('title') ?? '').trim();
+  if (title.length < 1 || title.length > MAX_TITLE_LENGTH) {
+    throw new RecipeValidationError('title');
+  }
+
+  const servingsRaw = String(form.get('servings') ?? '').trim();
+  let servings: number | null = null;
+  if (servingsRaw !== '') {
+    const value = Number(servingsRaw);
+    if (!Number.isFinite(value) || value <= 0 || value > MAX_SERVINGS) {
+      throw new RecipeValidationError('servings');
+    }
+    servings = value;
+  }
+
+  const instructions = String(form.get('instructions') ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== '');
+  if (
+    instructions.length < 1 ||
+    instructions.length > MAX_INSTRUCTION_LINES ||
+    instructions.some((line) => line.length > MAX_INSTRUCTION_LENGTH)
+  ) {
+    throw new RecipeValidationError('instructions');
+  }
+
+  const ingredients: IngredientInput[] = [];
+  for (let i = 0; i < INGREDIENT_FORM_ROWS; i++) {
+    const name = String(form.get(`ing-name-${i}`) ?? '').trim();
+    const qtyRaw = String(form.get(`ing-qty-${i}`) ?? '');
+    const unitRaw = String(form.get(`ing-unit-${i}`) ?? '').trim();
+    const noteRaw = String(form.get(`ing-note-${i}`) ?? '').trim();
+    if (name === '' && qtyRaw.trim() === '' && unitRaw === '' && noteRaw === '') {
+      continue;
+    }
+    if (name === '' || name.length > MAX_INGREDIENT_NAME_LENGTH) {
+      throw new RecipeValidationError('ingredients');
+    }
+    const quantity = parseQuantity(qtyRaw);
+    const unit = unitRaw === '' ? null : unitRaw.length <= MAX_UNIT_LENGTH ? unitRaw : null;
+    if (unitRaw !== '' && unit === null) throw new RecipeValidationError('ingredients');
+    const note = noteRaw === '' ? null : noteRaw.length <= MAX_NOTE_LENGTH ? noteRaw : null;
+    if (noteRaw !== '' && note === null) throw new RecipeValidationError('ingredients');
+    ingredients.push({ name, quantity, unit, note });
+  }
+  if (ingredients.length > MAX_INGREDIENT_ROWS) {
+    throw new RecipeValidationError('ingredients');
+  }
+
+  const tagSlugs = filterKnownSlugs(form.getAll('tags').map(String), [...knownTagSlugs]);
+  return { title, servings, instructions, ingredients, tagSlugs };
+}
+
+/**
+ * Insert one recipe + its head version (n=1) + ingredient/tag rows, and
+ * shelve it in the owner's bookshelf (not favorited). Sequential prepared
+ * statements — D1 has no interactive transactions, matching the existing
+ * `auth.ts` style. NULL-first head ordering is mandatory: `head_version_id`
+ * is a real FK, so the recipe row lands with NULL before the version id
+ * is patched in. New ingredient names get canonical rows with NULL
+ * category (uncategorized). Returns the recipe id.
+ */
+export async function createRecipe(db: Db, userId: number, input: RecipeInput): Promise<number> {
+  const recipe = await db
+    .prepare('INSERT INTO recipes (owner_user_id, head_version_id) VALUES (?, NULL)')
+    .bind(userId)
+    .run();
+  const recipeId = Number(recipe.meta.last_row_id);
+
+  const version = await db
+    .prepare(
+      `INSERT INTO recipe_versions
+         (recipe_id, n, title, servings, instructions, image_key, edit_note, created_by)
+       VALUES (?, 1, ?, ?, ?, NULL, NULL, ?)`,
+    )
+    .bind(recipeId, input.title, input.servings, JSON.stringify(input.instructions), userId)
+    .run();
+  const versionId = Number(version.meta.last_row_id);
+  await db
+    .prepare('UPDATE recipes SET head_version_id = ? WHERE id = ?')
+    .bind(versionId, recipeId)
+    .run();
+
+  let position = 0;
+  for (const ingredient of input.ingredients) {
+    const slug = slugify(ingredient.name);
+    await db
+      .prepare('INSERT INTO ingredients (name, slug, category) VALUES (?, ?, NULL) ON CONFLICT (slug) DO NOTHING')
+      .bind(ingredient.name, slug)
+      .run();
+    const row = await db
+      .prepare('SELECT id FROM ingredients WHERE slug = ?')
+      .bind(slug)
+      .first<{ id: number }>();
+    if (!row) throw new Error(`ingredient row missing after upsert: ${slug}`);
+    await db
+      .prepare(
+        `INSERT INTO recipe_ingredients
+           (recipe_version_id, ingredient_id, quantity, unit, note, position)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(versionId, row.id, ingredient.quantity, ingredient.unit, ingredient.note, position)
+      .run();
+    position += 1;
+  }
+
+  for (const tagSlug of input.tagSlugs) {
+    await db
+      .prepare(
+        `INSERT INTO recipe_tags (recipe_id, tag_id)
+         SELECT ?, id FROM tags WHERE slug = ?`,
+      )
+      .bind(recipeId, tagSlug)
+      .run();
+  }
+
+  await db
+    .prepare('INSERT OR IGNORE INTO user_recipes (user_id, recipe_id, is_favorite) VALUES (?, ?, 0)')
+    .bind(userId, recipeId)
+    .run();
+  return recipeId;
 }

@@ -12,6 +12,23 @@ would ever need undoing.
 
 ---
 
+## Unreleased — M3 slice 2: recipe create (issue #14)
+
+Change: signed-in recipe create — `GET /recipes/new` form (title, servings,
+instructions textarea, 8 ingredient rows with canonical-name datalist, tag
+checkboxes) + POST in the same file, `?error=<code>` banners, no
+repopulation. `createRecipe` in `src/lib/recipes.ts` inserts recipe (NULL
+head first) → head version (n=1) → ingredient rows (canonical match by
+slug, else new uncategorized row) → known tags → bookshelf shelve (not
+favorited). No images (M3d), no edit/delete. No migrations.
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e via
+`npm run preview` (logged-out POST 302, valid create 303 → detail renders,
+`nope` tag ignored, empty-title/bad-servings 303 with recipe count
+unchanged).
+
+Rollback: `npx wrangler rollback` (no schema change).
+
 ## Unreleased — M3 slice 1: recipe library reads (issue #13)
 
 Change: signed-in library reads — dashboard grid (`/`), detail
