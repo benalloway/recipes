@@ -28,8 +28,10 @@ context after. 1:1 with `mattpocock/skills` + `mattpocock/sandcastle`
 - Runtime config comes from Worker env bindings
   (`import { env } from 'cloudflare:workers'`) — **never `process.env`**.
   Secrets: `.dev.vars` (gitignored) locally, `wrangler secret put` in prod.
-  Sandcastle secrets live in `.sandcastle/.env` (gitignored): only
-  `OPENCODE_API_KEY` — never tokens, account IDs, or session keys.
+  Sandcastle secrets live in `.sandcastle/.env` (gitignored):
+  `OPENCODE_API_KEY` + `GH_TOKEN` (fine-grained PAT: Issues RW, Metadata R —
+  the sandbox's `gh` uses it to read/close issues). Never add Cloudflare
+  account IDs or session keys.
 - Migrations are plain-SQLite SQL in `migrations/` (portable, no D1-only
   syntax). Ingredients are relational rows; steps/security prose stays JSON.
 - Design system is fixed: Tailwind CSS v4 (CSS-first config) with tokens
