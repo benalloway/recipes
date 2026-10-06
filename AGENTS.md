@@ -47,6 +47,19 @@ npm run db:migrate:remote   # D1 migrations to production recipes-db
 Seeds are static, idempotent SQL (`scripts/seed.sql`, INSERT OR IGNORE) —
 run via `db:seed:local` / `db:seed:remote`. Don't add ad-hoc seed data.
 
+## Local D1 (acceptance fixtures)
+
+- `wrangler d1 execute --local` and `wrangler dev` share the same local D1
+  file — if a query looks wrong, suspect your SQL (ids, WHERE range) before
+  suspecting the channel. The dev DB is long-lived shared state across
+  sessions: other agents' fixture rows may already exist.
+- Fixture discipline: fixed ids, `DELETE`s first (re-runnable), then
+  SELECT-back to confirm what actually landed — never assume.
+- `npm run preview` serves the last `npm run build` output: **rebuild
+  before previewing**, or you test stale code.
+- `curl` POSTs need `-H "Origin: <preview-url>"` (Astro's CSRF check 403s
+  headerless posts; real browser forms send it).
+
 ## Workflow — issue to merged PR (follow every step, in order)
 
 0. **Claim:** work only issues labeled `agent:implement`, one at a time.
