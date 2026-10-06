@@ -1,17 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
 import EmptyState from '../components/EmptyState.astro';
-import RecipeCard from '../components/RecipeCard.astro';
+import RecipeGrid from '../components/RecipeGrid.astro';
 import { getDb } from '../lib/adapters/db';
 import { getDashboard } from '../lib/recipes';
 
 const session = Astro.locals.session;
 const cards = session ? await getDashboard(getDb(Astro.locals), session.userId) : [];
-const isEmpty = !!session && cards.length === 0;
+const hasCards = cards.length > 0;
+const showEmptyShelf = !!session && !hasCards;
 ---
 
 <Base title="Home">
-  <main class="mx-auto max-w-xl px-6 py-16">
+  <main class="mx-auto max-w-4xl px-6 py-20">
     {
       session && (
         <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
@@ -20,16 +21,10 @@ const isEmpty = !!session && cards.length === 0;
       )
     }
     <h1 class="mt-4 text-2xl font-light tracking-tight">Recipes</h1>
-    {session && cards.length > 0 && (
-      <div class="mt-8 grid gap-6">
-        {cards.map((card) => (
-          <RecipeCard card={card} />
-        ))}
-      </div>
-    )}
+    {session && hasCards && <RecipeGrid cards={cards} />}
     {!session && (
       <EmptyState>
-        <p class="text-ink">Your recipes live here once you sign in.</p>
+        <p class="font-hand text-lg text-ink">Your recipes live here once you sign in.</p>
         <p class="mt-4">
           <a href="/login" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
             Sign in to get started →
@@ -37,9 +32,9 @@ const isEmpty = !!session && cards.length === 0;
         </p>
       </EmptyState>
     )}
-    {isEmpty && (
+    {showEmptyShelf && (
       <EmptyState>
-        <p class="text-ink">No recipes yet — your shelf is ready when you are.</p>
+        <p class="font-hand text-lg text-ink">No recipes yet — your shelf is ready when you are.</p>
         <p class="mt-4">
           <a href="/recipes/new" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
             Add your first recipe →

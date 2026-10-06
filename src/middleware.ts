@@ -2,7 +2,8 @@ import { defineMiddleware } from 'astro:middleware';
 import { getDb } from './lib/adapters/db';
 import { SESSION_COOKIE, loadSessionByToken } from './lib/auth';
 
-const OPEN_PATHS = new Set(['/login', '/api/health', '/favicon.ico', '/robots.txt']);
+// `/` is public (logged-out landing with login CTA); all other pages gate to /login.
+const OPEN_PATHS = new Set(['/', '/login', '/api/health', '/favicon.ico', '/robots.txt']);
 
 export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.session = undefined;

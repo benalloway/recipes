@@ -36,6 +36,29 @@ POST shape only).
 
 ---
 
+## Unreleased — Cardstock 3 browse (issue #46)
+
+Change: Cardstock browse per ADR-0002 — `/` is now public and doubles
+as the logged-out landing (login CTA + marginalia note, no dead ends;
+all other routes still 302 to `/login`); dashboard/favorites/tag
+surfaces move to the calm-abundance grid (`max-w-4xl`, 2-col `sm`
+grid, `gap-10`); recipe titles render in the chapbook serif
+(`RecipeCard` + detail `h1`), empty-state asides in the marginalia
+hand (`--font-serif`/`--font-hand` system stacks in `@theme`, no
+webfonts, no new colors); tag chips navigate to tag pages and back
+(`← Recipes`).
+
+Verify: `npm run check` + `npm run build` green, CI green; local e2e
+via `npm run preview` (logged-out `/` 200 with login CTA, favorites /
+tags / detail logged-out 302; logged-in dashboard/favorites/tag 200
+with calm grid + serif titles + chips → tag pages → back; empty tag
+state with guidance links; fixtures cleaned).
+
+Rollback: `npx wrangler rollback` (no schema change; visuals + `/`
+auth gate only).
+
+---
+
 ## Unreleased — Cardstock 1 shell (issue #44)
 
 Change: Cardstock shell per ADR-0002 — warmed `@theme` tokens (paper

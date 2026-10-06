@@ -1,6 +1,7 @@
 /* Tailwind CSS v4 — CSS-first config.
    Design tokens live in @theme below and generate utilities
-   (bg-bg, bg-surface, border-hairline, text-ink, text-muted, text-accent, font-sans).
+   (bg-bg, bg-surface, border-hairline, text-ink, text-muted, text-accent,
+   font-sans, font-serif, font-hand).
    Cardstock (ADR-0002): warmed paper/rule/ink/paprika; sharp corners only
    (≤2px radius); no new colors, fonts, shadows, or animation without a new ADR.
    Preflight is intentionally NOT imported: the design language keeps
@@ -19,10 +20,13 @@
   --color-accent: #b4432a;
 
   --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* Chapbook voice: serif with character for recipe titles (ADR-0002).
+     System stack only — no webfonts, no new colors. */
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Book Antiqua', serif;
   /* The single handwriting face (ADR-0002): marginalia only — edit notes,
-     personal asides, never body copy or labels. System hands so no webfont
-     ships; generates the `font-hand` utility. */
-  --font-hand: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive;
+     personal asides, empty-state asides, never body copy or labels.
+     System hands so no webfont ships; generates the `font-hand` utility. */
+  --font-hand: 'Segoe Script', 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', cursive;
 }
 
 @layer base {
