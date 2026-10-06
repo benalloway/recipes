@@ -1,6 +1,7 @@
 /* Tailwind CSS v4 — CSS-first config.
    Design tokens live in @theme below and generate utilities
-   (bg-bg, bg-surface, border-hairline, text-ink, text-muted, text-accent, font-sans).
+   (bg-bg, bg-surface, border-hairline, text-ink, text-muted, text-accent,
+   font-sans, font-serif, font-hand).
    Cardstock (ADR-0002): warmed paper/rule/ink/paprika; sharp corners only
    (≤2px radius); no new colors, fonts, shadows, or animation without a new ADR.
    Preflight is intentionally NOT imported: the design language keeps

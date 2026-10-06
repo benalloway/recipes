@@ -1,0 +1,16 @@
+---
+import type { RecipeCard as Card } from '../lib/recipes';
+import RecipeCard from './RecipeCard.astro';
+
+interface Props {
+  cards: Card[];
+}
+
+const { cards } = Astro.props;
+---
+
+<div class="mt-12 grid gap-10 sm:grid-cols-2">
+  {cards.map((card) => (
+    <RecipeCard card={card} />
+  ))}
+</div>

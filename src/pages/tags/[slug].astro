@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import EmptyState from '../../components/EmptyState.astro';
-import RecipeCard from '../../components/RecipeCard.astro';
+import RecipeGrid from '../../components/RecipeGrid.astro';
 import { getDb } from '../../lib/adapters/db';
 import { getTagBySlug, listByTag } from '../../lib/recipes';
 
@@ -23,7 +23,7 @@ if (cards === null) {
         <h1 class="mt-4 text-2xl font-light tracking-tight">Not found</h1>
         <p class="mt-2 text-ink">No such tag.</p>
         <p class="mt-4">
-          <a href="/" class="text-xs uppercase tracking-[0.2em] text-accent">
+          <a href="/" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
             ← Back to recipes
           </a>
         </p>
@@ -39,11 +39,7 @@ if (cards === null) {
         </p>
         <h1 class="mt-4 text-2xl font-light tracking-tight">{tag?.name}</h1>
         {cards.length > 0 ? (
-          <div class="mt-12 grid gap-10 sm:grid-cols-2">
-            {cards.map((card) => (
-              <RecipeCard card={card} />
-            ))}
-          </div>
+          <RecipeGrid cards={cards} />
         ) : (
           <EmptyState>
             <p class="font-hand text-lg text-ink">Nothing shelved under this tag yet.</p>

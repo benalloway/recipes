@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import EmptyState from '../components/EmptyState.astro';
-import RecipeCard from '../components/RecipeCard.astro';
+import RecipeGrid from '../components/RecipeGrid.astro';
 import { getDb } from '../lib/adapters/db';
 import { listFavorites } from '../lib/recipes';
 
@@ -19,11 +19,7 @@ const cards = session ? await listFavorites(getDb(Astro.locals), session.userId)
     <h1 class="mt-4 text-2xl font-light tracking-tight">Favorites</h1>
     {
       cards.length > 0 ? (
-        <div class="mt-12 grid gap-10 sm:grid-cols-2">
-          {cards.map((card) => (
-            <RecipeCard card={card} />
-          ))}
-        </div>
+        <RecipeGrid cards={cards} />
       ) : (
         <EmptyState>
           <p class="font-hand text-lg text-ink">No favorites yet — tap the star on any recipe to keep it here.</p>

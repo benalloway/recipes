@@ -1,13 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import EmptyState from '../components/EmptyState.astro';
-import RecipeCard from '../components/RecipeCard.astro';
+import RecipeGrid from '../components/RecipeGrid.astro';
 import { getDb } from '../lib/adapters/db';
 import { getDashboard } from '../lib/recipes';
 
 const session = Astro.locals.session;
 const cards = session ? await getDashboard(getDb(Astro.locals), session.userId) : [];
-const isEmpty = !!session && cards.length === 0;
+const hasCards = cards.length > 0;
+const showEmptyShelf = !!session && !hasCards;
 ---
 
 <Base title="Home">
@@ -20,13 +21,7 @@ const isEmpty = !!session && cards.length === 0;
       )
     }
     <h1 class="mt-4 text-2xl font-light tracking-tight">Recipes</h1>
-    {session && cards.length > 0 && (
-      <div class="mt-12 grid gap-10 sm:grid-cols-2">
-        {cards.map((card) => (
-          <RecipeCard card={card} />
-        ))}
-      </div>
-    )}
+    {session && hasCards && <RecipeGrid cards={cards} />}
     {!session && (
       <EmptyState>
         <p class="font-hand text-lg text-ink">Your recipes live here once you sign in.</p>
@@ -37,7 +32,7 @@ const isEmpty = !!session && cards.length === 0;
         </p>
       </EmptyState>
     )}
-    {isEmpty && (
+    {showEmptyShelf && (
       <EmptyState>
         <p class="font-hand text-lg text-ink">No recipes yet — your shelf is ready when you are.</p>
         <p class="mt-4">
