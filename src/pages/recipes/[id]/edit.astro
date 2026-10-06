@@ -1,0 +1,217 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { getDb } from '../../../lib/adapters/db';
+import {
+  RecipeValidationError,
+  appendVersion,
+  formatQuantity,
+  getRecipeDetail,
+  parseRecipeForm,
+} from '../../../lib/recipes';
+
+const session = Astro.locals.session;
+if (!session) {
+  return Astro.redirect('/login', 302);
+}
+
+const db = getDb(Astro.locals);
+const id = Number(Astro.params.id);
+
+if (Astro.request.method === 'POST') {
+  let form: FormData;
+  try {
+    form = await Astro.request.formData();
+  } catch {
+    return Astro.redirect(`/recipes/${id}/edit?error=unknown`, 303);
+  }
+  const knownTagSlugs = new Set(
+    (
+      (await db.prepare('SELECT slug FROM tags').all<{ slug: string }>()).results ?? []
+    ).map((row) => row.slug),
+  );
+  try {
+    const input = parseRecipeForm(form, knownTagSlugs);
+    const version = await appendVersion(db, session.userId, id, input);
+    if (version === null) {
+      Astro.response.status = 404;
+    } else {
+      return Astro.redirect(`/recipes/${id}`, 303);
+    }
+  } catch (err) {
+    if (err instanceof RecipeValidationError) {
+      return Astro.redirect(`/recipes/${id}/edit?error=${err.code}`, 303);
+    }
+    throw err;
+  }
+}
+
+const detail = await getRecipeDetail(db, id, session.userId);
+if (!detail) {
+  Astro.response.status = 404;
+}
+
+const params = Astro.url.searchParams;
+const error = params.get('error');
+
+const ERRORS: Record<string, string> = {
+  title: 'Title is required (1–200 characters).',
+  servings: 'Servings must be a number above 0.',
+  ingredients: 'Check ingredient rows: names required, quantities numeric.',
+  instructions: 'At least one instruction step is required.',
+};
+const errorMessage = error ? (ERRORS[error] ?? 'Something went wrong. Try again.') : null;
+
+const canonicalIngredients =
+  ((await db.prepare('SELECT name FROM ingredients ORDER BY name LIMIT 500').all<{ name: string }>()).results ?? []).map(
+    (row) => row.name,
+  );
+const allTags =
+  ((await db.prepare('SELECT name, slug FROM tags ORDER BY name').all<{ name: string; slug: string }>()).results ??
+    []);
+const checkedSlugs = new Set((detail?.tags ?? []).map((tag) => tag.slug));
+// Existing rows in position order + 4 blank rows for additions.
+const formRows = [...(detail?.ingredients ?? [])];
+for (let i = 0; i < 4; i++) {
+  formRows.push({ name: '', quantity: null, unit: null, note: null });
+}
+---
+
+{
+  !detail ? (
+    <Base title="Not found">
+      <main class="mx-auto max-w-xl px-6 py-16">
+        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">404 — Not found</p>
+        <h1 class="mt-4 text-2xl font-light tracking-tight">Not found</h1>
+        <p class="mt-2 text-ink">That recipe does not exist, was deleted, or belongs to someone else.</p>
+        <p class="mt-4">
+          <a href="/" class="text-xs uppercase tracking-[0.2em] text-accent">
+            ← Back to recipes
+          </a>
+        </p>
+      </main>
+    </Base>
+  ) : (
+    <Base title={`Edit ${detail.title}`}>
+      <main class="mx-auto max-w-xl px-6 py-16">
+        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+          <a href={`/recipes/${detail.id}`} class="text-accent">
+            ← Back to recipe
+          </a>
+        </p>
+        <h1 class="mt-4 text-2xl font-light tracking-tight">Edit recipe</h1>
+
+        {errorMessage && (
+          <div class="mt-6 border border-hairline bg-surface px-6 py-4">
+            <p class="text-sm text-ink">{errorMessage}</p>
+          </div>
+        )}
+
+        <form method="post" action={`/recipes/${detail.id}/edit`} class="mt-8">
+          <label for="title" class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+            Title
+          </label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            required
+            maxlength="200"
+            value={detail.title}
+            class="mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+          />
+
+          <label for="servings" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+            Servings (blank for none)
+          </label>
+          <input
+            id="servings"
+            name="servings"
+            type="text"
+            inputmode="decimal"
+            value={detail.servings !== null ? formatQuantity(detail.servings) : ''}
+            class="mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+          />
+
+          <label for="instructions" class="mt-8 block text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+            Instructions (one step per line)
+          </label>
+          <textarea
+            id="instructions"
+            name="instructions"
+            required
+            rows="6"
+            class="mt-2 w-full border border-hairline bg-transparent px-4 py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+          >
+            {detail.instructions.join('\n')}
+          </textarea>
+
+          <h2 class="mt-8 text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Ingredients</h2>
+          <datalist id="canonical-ingredients">
+            {canonicalIngredients.map((name) => (
+              <option value={name} />
+            ))}
+          </datalist>
+          {formRows.map((ingredient, i) => (
+            <div class="mt-4 grid grid-cols-2 gap-4 border-t border-hairline pt-4">
+              <input
+                name={`ing-name-${i}`}
+                type="text"
+                maxlength="100"
+                list="canonical-ingredients"
+                value={ingredient.name}
+                placeholder="Ingredient"
+                aria-label={`Ingredient ${i + 1} name`}
+                class="col-span-2 w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+              />
+              <input
+                name={`ing-qty-${i}`}
+                type="text"
+                inputmode="decimal"
+                value={ingredient.quantity !== null ? formatQuantity(ingredient.quantity) : ''}
+                placeholder="Qty"
+                aria-label={`Ingredient ${i + 1} quantity`}
+                class="w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+              />
+              <input
+                name={`ing-unit-${i}`}
+                type="text"
+                maxlength="20"
+                value={ingredient.unit ?? ''}
+                placeholder="Unit"
+                aria-label={`Ingredient ${i + 1} unit`}
+                class="w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+              />
+              <input
+                name={`ing-note-${i}`}
+                type="text"
+                maxlength="200"
+                value={ingredient.note ?? ''}
+                placeholder="Note (optional)"
+                aria-label={`Ingredient ${i + 1} note`}
+                class="col-span-2 w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
+              />
+            </div>
+          ))}
+
+          <h2 class="mt-8 text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Tags</h2>
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            {allTags.map((tag) => (
+              <label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
+                <input type="checkbox" name="tags" value={tag.slug} checked={checkedSlugs.has(tag.slug)} />
+                {tag.name}
+              </label>
+            ))}
+          </div>
+          <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
+
+          <button
+            type="submit"
+            class="mt-8 w-full cursor-pointer border border-ink bg-ink py-3 font-sans text-xs uppercase tracking-[0.2em] text-bg hover:opacity-90"
+          >
+            Save changes
+          </button>
+        </form>
+      </main>
+    </Base>
+  )
+}

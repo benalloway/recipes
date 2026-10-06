@@ -357,7 +357,9 @@ export function parseRecipeForm(form: FormData, knownTagSlugs: Set<string>): Rec
   }
 
   const ingredients: IngredientInput[] = [];
-  for (let i = 0; i < INGREDIENT_FORM_ROWS; i++) {
+  // Reads up to MAX_INGREDIENT_ROWS indexed rows: the new form renders
+  // INGREDIENT_FORM_ROWS, the edit form renders existing + 4 blanks.
+  for (let i = 0; i < MAX_INGREDIENT_ROWS; i++) {
     const name = String(form.get(`ing-name-${i}`) ?? '').trim();
     const qtyRaw = String(form.get(`ing-qty-${i}`) ?? '');
     const unitRaw = String(form.get(`ing-unit-${i}`) ?? '').trim();
@@ -375,8 +377,8 @@ export function parseRecipeForm(form: FormData, knownTagSlugs: Set<string>): Rec
     if (note !== null && note.length > MAX_NOTE_LENGTH) throw new RecipeValidationError('ingredients');
     ingredients.push({ name, quantity, unit, note });
   }
-  // Fixed at INGREDIENT_FORM_ROWS today, so the cap below is unreachable —
-  // kept as future-proofing for a dynamic (JS-grown) row set.
+  // The new form posts INGREDIENT_FORM_ROWS rows; the edit form can post
+  // more (existing + 4 blanks), so the cap binds there instead.
   if (ingredients.length < 1 || ingredients.length > MAX_INGREDIENT_ROWS) {
     throw new RecipeValidationError('ingredients');
   }
@@ -420,28 +422,53 @@ export async function createRecipe(db: Db, userId: number, input: RecipeInput): 
 
   let position = 0;
   for (const ingredient of input.ingredients) {
-    const slug = slugify(ingredient.name);
-    await db
-      .prepare('INSERT INTO ingredients (name, slug, category) VALUES (?, ?, NULL) ON CONFLICT (slug) DO NOTHING')
-      .bind(ingredient.name, slug)
-      .run();
-    const row = await db
-      .prepare('SELECT id FROM ingredients WHERE slug = ?')
-      .bind(slug)
-      .first<{ id: number }>();
-    if (!row) throw new Error(`ingredient row missing after upsert: ${slug}`);
-    await db
-      .prepare(
-        `INSERT INTO recipe_ingredients
-           (recipe_version_id, ingredient_id, quantity, unit, note, position)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(versionId, row.id, ingredient.quantity, ingredient.unit, ingredient.note, position)
-      .run();
+    await insertIngredientRow(db, versionId, ingredient, position);
     position += 1;
   }
 
-  for (const tagSlug of input.tagSlugs) {
+  await replaceRecipeTags(db, recipeId, input.tagSlugs);
+
+  await db
+    .prepare('INSERT OR IGNORE INTO user_recipes (user_id, recipe_id, is_favorite) VALUES (?, ?, 0)')
+    .bind(userId, recipeId)
+    .run();
+  return recipeId;
+}
+
+/** One versioned ingredient row: canonical match by slug, else a new uncategorized row. */
+async function insertIngredientRow(
+  db: Db,
+  versionId: number,
+  ingredient: IngredientInput,
+  position: number,
+): Promise<void> {
+  const slug = slugify(ingredient.name);
+  await db
+    .prepare('INSERT INTO ingredients (name, slug, category) VALUES (?, ?, NULL) ON CONFLICT (slug) DO NOTHING')
+    .bind(ingredient.name, slug)
+    .run();
+  const row = await db
+    .prepare('SELECT id FROM ingredients WHERE slug = ?')
+    .bind(slug)
+    .first<{ id: number }>();
+  if (!row) throw new Error(`ingredient row missing after upsert: ${slug}`);
+  await db
+    .prepare(
+      `INSERT INTO recipe_ingredients
+         (recipe_version_id, ingredient_id, quantity, unit, note, position)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(versionId, row.id, ingredient.quantity, ingredient.unit, ingredient.note, position)
+    .run();
+}
+
+/** Replace a recipe's tag set with the given known slugs. */
+async function replaceRecipeTags(db: Db, recipeId: number, tagSlugs: string[]): Promise<void> {
+  await db
+    .prepare('DELETE FROM recipe_tags WHERE recipe_id = ?')
+    .bind(recipeId)
+    .run();
+  for (const tagSlug of tagSlugs) {
     await db
       .prepare(
         `INSERT INTO recipe_tags (recipe_id, tag_id)
@@ -450,10 +477,54 @@ export async function createRecipe(db: Db, userId: number, input: RecipeInput): 
       .bind(recipeId, tagSlug)
       .run();
   }
+}
+
+/**
+ * Append a new immutable head version (n = head + 1) with fresh ingredient
+ * rows and a replaced tag set. Old versions are never touched. Image key
+ * carries forward unchanged (uploads land in M3d). `user_recipes` untouched.
+ * Returns the new version's `n`, or null when missing / not owned / deleted.
+ */
+export async function appendVersion(
+  db: Db,
+  userId: number,
+  recipeId: number,
+  input: RecipeInput,
+): Promise<number | null> {
+  if (positiveInt(recipeId) === null || positiveInt(userId) === null) return null;
+  const owned = await db
+    .prepare('SELECT head_version_id FROM recipes WHERE id = ? AND owner_user_id = ? AND deleted_at IS NULL')
+    .bind(recipeId, userId)
+    .first<{ head_version_id: number }>();
+  if (!owned) return null;
+
+  const head = await db
+    .prepare('SELECT n, image_key FROM recipe_versions WHERE id = ?')
+    .bind(owned.head_version_id)
+    .first<{ n: number; image_key: string | null }>();
+  if (!head) throw new Error(`head version missing for recipe ${recipeId}`);
+
+  const next = head.n + 1;
+  const version = await db
+    .prepare(
+      `INSERT INTO recipe_versions
+         (recipe_id, n, title, servings, instructions, image_key, edit_note, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, ?)`,
+    )
+    .bind(recipeId, next, input.title, input.servings, JSON.stringify(input.instructions), head.image_key, userId)
+    .run();
+  const versionId = Number(version.meta.last_row_id);
+
+  let position = 0;
+  for (const ingredient of input.ingredients) {
+    await insertIngredientRow(db, versionId, ingredient, position);
+    position += 1;
+  }
+  await replaceRecipeTags(db, recipeId, input.tagSlugs);
 
   await db
-    .prepare('INSERT OR IGNORE INTO user_recipes (user_id, recipe_id, is_favorite) VALUES (?, ?, 0)')
-    .bind(userId, recipeId)
+    .prepare('UPDATE recipes SET head_version_id = ? WHERE id = ?')
+    .bind(versionId, recipeId)
     .run();
-  return recipeId;
+  return next;
 }
