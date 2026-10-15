@@ -1,25 +1,33 @@
 ---
 import Eyebrow from './Eyebrow.astro';
+import Heading from './Heading.astro';
+import Text from './Text.astro';
 
+/**
+ * Standardized Oatmeal PageHeader (hero-simple-left-aligned.tsx).
+ * Composes Eyebrow + Heading + Text + optional actions slot.
+ */
 interface Props {
   title: string;
   intro?: string;
   eyebrow?: string;
+  class?: string;
 }
 
-const { title, intro, eyebrow } = Astro.props;
+const { title, intro, eyebrow, class: className = '' } = Astro.props;
 ---
 
-<header class="max-w-2xl">
+<header class:list={['max-w-2xl', className]}>
   {eyebrow && <Eyebrow class="mb-2">{eyebrow}</Eyebrow>}
-  <h1 class="font-display text-5xl/12 tracking-tight text-balance text-olive-950 sm:text-[5rem]/20 dark:text-white">
+  <Heading level={1} size="display">
     {title}
-  </h1>
+  </Heading>
   {
     intro && (
-      <div class="mt-6 text-base/7 text-pretty text-olive-700 sm:text-lg/8 dark:text-olive-400">
+      <Text as="div" size="lg" class="mt-6 text-pretty">
         {intro}
-      </div>
+      </Text>
     )
   }
+  <slot />
 </header>

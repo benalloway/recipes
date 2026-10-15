@@ -1,0 +1,44 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal Text (text.tsx) + Catalyst Text (text.tsx).
+ * Single source of truth for body copy, lead paragraphs, and supporting text.
+ */
+const sizeStyles = {
+  xs: 'text-xs/6',
+  sm: 'text-sm/7',
+  md: 'text-base/7',
+  lg: 'text-base/7 sm:text-lg/8',
+} as const;
+
+const variantStyles = {
+  muted: 'text-olive-700 dark:text-olive-400',
+  primary: 'text-olive-950 dark:text-white',
+  subtle: 'text-olive-600 dark:text-olive-500',
+  light: 'text-white/85',
+} as const;
+
+interface Props extends HTMLAttributes<'p'> {
+  as?: 'p' | 'div' | 'span';
+  size?: keyof typeof sizeStyles;
+  variant?: keyof typeof variantStyles;
+  class?: string;
+}
+
+const {
+  as: Tag = 'p',
+  size = 'md',
+  variant = 'muted',
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<Tag
+  data-slot="text"
+  class:list={[sizeStyles[size], variantStyles[variant], className]}
+  {...rest}
+>
+  <slot />
+</Tag>

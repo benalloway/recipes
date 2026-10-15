@@ -1,0 +1,51 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal Disclosure / Accordion (faqs-accordion.tsx) + Tailwind UI Ecommerce expandable product details.
+ * Uses native <details> / <summary> for zero-JS progressive disclosure with 44px touch target.
+ */
+interface Props extends HTMLAttributes<'details'> {
+  title: string;
+  meta?: string;
+  open?: boolean;
+  class?: string;
+}
+
+const {
+  title,
+  meta,
+  open = false,
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<details
+  open={open || undefined}
+  class:list={[
+    'group rounded-2xl border border-olive-950/10 bg-white/60 px-5 py-3 dark:border-white/10 dark:bg-white/5',
+    className,
+  ]}
+  {...rest}
+>
+  <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm/7 font-semibold text-olive-950 marker:hidden [&::-webkit-details-marker]:hidden dark:text-white">
+    <span>{title}</span>
+    <span class="inline-flex items-center gap-2 text-xs/6 font-normal text-olive-700 dark:text-olive-400">
+      {meta && <span>{meta}</span>}
+      <svg
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        aria-hidden="true"
+        class="size-4 text-olive-700 transition-transform duration-150 group-open:rotate-45 dark:text-olive-400"
+      >
+        <path d="M8 3.25v9.5M3.25 8h9.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </span>
+  </summary>
+  <div class="pt-3 pb-2">
+    <slot />
+  </div>
+</details>

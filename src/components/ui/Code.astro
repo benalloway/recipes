@@ -1,0 +1,20 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Catalyst Code (text.tsx) themed with Oatmeal olive tokens.
+ */
+interface Props extends HTMLAttributes<'code'> {
+  class?: string;
+}
+
+const { class: className = '', ...rest } = Astro.props;
+---
+
+<code
+  class:list={[
+    'rounded-sm border border-olive-950/10 bg-olive-950/5 px-1 py-0.5 font-mono text-xs font-medium text-olive-950 dark:border-white/15 dark:bg-white/5 dark:text-white',
+    className,
+  ]}
+  {...rest}
+><slot /></code>

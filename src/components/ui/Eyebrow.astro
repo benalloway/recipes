@@ -1,11 +1,20 @@
 ---
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal Eyebrow (eyebrow.tsx).
+ */
+interface Props extends HTMLAttributes<'div'> {
+  as?: 'div' | 'p' | 'span';
   class?: string;
 }
 
-const { class: className = '' } = Astro.props;
+const { as: Tag = 'div', class: className = '', ...rest } = Astro.props;
 ---
 
-<div class:list={['text-sm/7 font-semibold text-olive-700 dark:text-olive-400', className]}>
+<Tag
+  class:list={['text-sm/7 font-semibold text-olive-700 dark:text-olive-400', className]}
+  {...rest}
+>
   <slot />
-</div>
+</Tag>

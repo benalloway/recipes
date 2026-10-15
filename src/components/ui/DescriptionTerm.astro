@@ -1,0 +1,22 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Catalyst DescriptionTerm (description-list.tsx) themed with Oatmeal olive tokens.
+ */
+interface Props extends HTMLAttributes<'dt'> {
+  class?: string;
+}
+
+const { class: className = '', ...rest } = Astro.props;
+---
+
+<dt
+  class:list={[
+    'col-start-1 border-t border-olive-950/10 pt-3 text-olive-700 first:border-none sm:border-t sm:border-olive-950/10 sm:py-3 dark:border-white/10 dark:text-olive-400 sm:dark:border-white/10',
+    className,
+  ]}
+  {...rest}
+>
+  <slot />
+</dt>

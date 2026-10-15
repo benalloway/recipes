@@ -1,0 +1,49 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal Card surface primitive.
+ * - `surface` (default): bordered translucent olive card (`bg-white/60 dark:bg-white/5`)
+ * - `tonal`: Oatmeal flat tonal panel (`bg-olive-950/2.5 dark:bg-white/5`)
+ * - `interactive`: Ecommerce / catalog card with hover elevation
+ * - `dashed`: Empty state / dropzone border
+ */
+const variantStyles = {
+  surface:
+    'rounded-2xl border border-olive-950/10 bg-white/60 dark:border-white/10 dark:bg-white/5',
+  tonal: 'rounded-2xl bg-olive-950/4 dark:bg-white/5',
+  interactive:
+    'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-olive-950/10 bg-white/80 shadow-2xs transition hover:border-olive-950/25 hover:bg-white hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/7.5',
+  dashed:
+    'rounded-2xl border border-dashed border-olive-950/20 text-center dark:border-white/15',
+} as const;
+
+const paddingStyles = {
+  none: '',
+  sm: 'p-4',
+  md: 'p-5 sm:p-6',
+  lg: 'p-6 sm:p-8',
+} as const;
+
+interface Props extends HTMLAttributes<'div'> {
+  as?: 'div' | 'section' | 'article' | 'aside';
+  variant?: keyof typeof variantStyles;
+  padding?: keyof typeof paddingStyles;
+  class?: string;
+}
+
+const {
+  as: Tag = 'div',
+  variant = 'surface',
+  padding = 'md',
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<Tag
+  class:list={[variantStyles[variant], paddingStyles[padding], className]}
+  {...rest}
+>
+  <slot />
+</Tag>

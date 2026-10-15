@@ -1,0 +1,25 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Catalyst Divider (divider.tsx) themed with Oatmeal olive border tokens.
+ */
+interface Props extends HTMLAttributes<'hr'> {
+  soft?: boolean;
+  class?: string;
+}
+
+const { soft = false, class: className = '', ...rest } = Astro.props;
+---
+
+<hr
+  role="presentation"
+  class:list={[
+    'w-full border-0 border-t',
+    soft
+      ? 'border-olive-950/5 dark:border-white/5'
+      : 'border-olive-950/10 dark:border-white/10',
+    className,
+  ]}
+  {...rest}
+/>

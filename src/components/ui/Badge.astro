@@ -1,34 +1,75 @@
 ---
+import type { HTMLAttributes } from 'astro/types';
+
 /**
- * Oatmeal announcement-badge visuals with Catalyst color API kept stable.
- * Strong colors (teal/emerald/indigo) render as solid olive pills;
- * the rest render as soft olive tonal pills.
+ * Oatmeal announcement/tonal badge visuals + Catalyst Badge / BadgeButton API.
+ * Strong colors (`solid`, `olive`, `teal`, `emerald`, `indigo`) render as solid olive pills;
+ * soft colors (`soft`, `zinc`, `amber`, `sky`, `rose`, `purple`) render as tonal olive pills;
+ * `overlay` renders translucent pills for dark/gradient artwork cards.
  */
 const colors = {
+  solid: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
+  olive: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
   teal: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
   emerald: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
   indigo: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
-  zinc: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
-  amber: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
-  sky: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
-  rose: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
-  purple: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
+  soft: 'bg-olive-950/6 text-olive-950 dark:bg-white/8 dark:text-white dark:inset-ring-1 dark:inset-ring-white/10',
+  zinc: 'bg-olive-950/6 text-olive-950 dark:bg-white/8 dark:text-white dark:inset-ring-1 dark:inset-ring-white/10',
+  amber: 'bg-olive-950/6 text-olive-950 dark:bg-white/8 dark:text-white dark:inset-ring-1 dark:inset-ring-white/10',
+  sky: 'bg-olive-950/6 text-olive-950 dark:bg-white/8 dark:text-white dark:inset-ring-1 dark:inset-ring-white/10',
+  rose: 'bg-olive-950/6 text-olive-950 dark:bg-white/8 dark:text-white dark:inset-ring-1 dark:inset-ring-white/10',
+  purple: 'bg-olive-950/6 text-olive-950 dark:bg-white/8 dark:text-white dark:inset-ring-1 dark:inset-ring-white/10',
+  overlay: 'bg-black/40 text-white backdrop-blur-xs inset-ring-1 inset-ring-white/15',
+  'overlay-amber': 'bg-black/45 text-amber-300 backdrop-blur-xs inset-ring-1 inset-ring-white/15',
+  'overlay-soft': 'bg-white/15 text-white backdrop-blur-xs',
 } as const;
 
-interface Props {
+const sizeStyles = {
+  sm: 'px-2.5 py-0.5 text-xs/5',
+  md: 'px-3 py-0.5 text-sm/6',
+} as const;
+
+interface Props extends HTMLAttributes<'span'>, HTMLAttributes<'a'> {
   color?: keyof typeof colors;
+  size?: keyof typeof sizeStyles;
+  href?: string;
   class?: string;
 }
 
-const { color = 'zinc', class: className = '' } = Astro.props;
+const {
+  color = 'zinc',
+  size = 'md',
+  href,
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const badgeClasses = [
+  'inline-flex max-w-full items-center gap-x-1.5 rounded-full font-medium',
+  sizeStyles[size],
+  colors[color],
+  className,
+];
 ---
 
-<span
-  class:list={[
-    'inline-flex max-w-full items-center gap-x-1.5 rounded-full px-3 py-0.5 text-sm/6 font-medium',
-    colors[color],
-    className,
-  ]}
->
-  <slot />
-</span>
+{
+  href ? (
+    <a
+      href={href}
+      class="group relative inline-flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive-700 dark:focus-visible:outline-olive-300"
+      {...rest}
+    >
+      <span
+        class="absolute top-1/2 left-1/2 size-[max(100%,2.75rem)] -translate-x-1/2 -translate-y-1/2 pointer-fine:hidden"
+        aria-hidden="true"
+      />
+      <span class:list={[badgeClasses, 'transition group-hover:opacity-80']}>
+        <slot />
+      </span>
+    </a>
+  ) : (
+    <span class:list={badgeClasses} {...rest}>
+      <slot />
+    </span>
+  )
+}

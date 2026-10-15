@@ -49,7 +49,9 @@
 }
 
 @layer components {
-  /* Oatmeal prose: olive body copy, olive-950 headings, underlined links */
+  /* Oatmeal prose: olive body copy, olive-950 headings, underlined links.
+     Both .prose-oatmeal and .prose-spotlight are supported. */
+  .prose-oatmeal,
   .prose-spotlight {
     --tw-prose-body: var(--color-olive-700);
     --tw-prose-headings: var(--color-olive-950);
@@ -76,7 +78,7 @@
     line-height: 1.75rem;
   }
 
-  :is(.dark .prose-spotlight) {
+  :is(.dark .prose-oatmeal, .dark .prose-spotlight) {
     --tw-prose-body: var(--color-olive-400);
     --tw-prose-headings: #fff;
     --tw-prose-links: #fff;
@@ -98,37 +100,37 @@
     --tw-prose-td-borders: color-mix(in oklab, #fff 8%, transparent);
   }
 
-  .prose-spotlight p {
+  :is(.prose-oatmeal, .prose-spotlight) p {
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
   }
 
-  .prose-spotlight :is(h2, h3, h4) {
+  :is(.prose-oatmeal, .prose-spotlight) :is(h2, h3, h4) {
     color: var(--tw-prose-headings);
     font-family: var(--font-display);
     font-weight: 400;
     letter-spacing: -0.01em;
   }
 
-  .prose-spotlight h2 {
+  :is(.prose-oatmeal, .prose-spotlight) h2 {
     font-size: var(--text-xl);
     line-height: 2rem;
     margin-top: 3.5rem;
     margin-bottom: 1rem;
   }
 
-  .prose-spotlight h3 {
+  :is(.prose-oatmeal, .prose-spotlight) h3 {
     font-size: var(--text-lg);
     line-height: 2rem;
     margin-top: 2.25rem;
     margin-bottom: 0.75rem;
   }
 
-  .prose-spotlight :is(h2, h3) + * {
+  :is(.prose-oatmeal, .prose-spotlight) :is(h2, h3) + * {
     margin-top: 0;
   }
 
-  .prose-spotlight a {
+  :is(.prose-oatmeal, .prose-spotlight) a {
     color: var(--tw-prose-links);
     font-weight: 600;
     text-decoration: underline;
@@ -137,17 +139,17 @@
     transition: color 150ms ease-in-out, text-decoration-color 150ms ease-in-out;
   }
 
-  .prose-spotlight a:hover {
+  :is(.prose-oatmeal, .prose-spotlight) a:hover {
     color: var(--tw-prose-links-hover);
     text-decoration-color: var(--tw-prose-underline-hover);
   }
 
-  .prose-spotlight strong {
+  :is(.prose-oatmeal, .prose-spotlight) strong {
     color: var(--tw-prose-bold);
     font-weight: 600;
   }
 
-  .prose-spotlight blockquote {
+  :is(.prose-oatmeal, .prose-spotlight) blockquote {
     margin-top: 2rem;
     margin-bottom: 2rem;
     padding-left: 1.5rem;
@@ -155,40 +157,40 @@
     font-style: italic;
   }
 
-  .prose-spotlight ul {
+  :is(.prose-oatmeal, .prose-spotlight) ul {
     list-style-type: disc;
     padding-left: 1.5rem;
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
   }
 
-  .prose-spotlight ol {
+  :is(.prose-oatmeal, .prose-spotlight) ol {
     list-style-type: decimal;
     padding-left: 1.5rem;
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
   }
 
-  .prose-spotlight li {
+  :is(.prose-oatmeal, .prose-spotlight) li {
     margin-top: 0.75rem;
     margin-bottom: 0.75rem;
     padding-left: 0.375rem;
   }
 
-  .prose-spotlight li::marker {
+  :is(.prose-oatmeal, .prose-spotlight) li::marker {
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--tw-prose-counters);
   }
 
-  .prose-spotlight hr {
+  :is(.prose-oatmeal, .prose-spotlight) hr {
     margin-top: 3rem;
     margin-bottom: 3rem;
     border: 0;
     border-top: 1px solid var(--tw-prose-hr);
   }
 
-  .prose-spotlight code {
+  :is(.prose-oatmeal, .prose-spotlight) code {
     display: inline-block;
     color: var(--tw-prose-code);
     font-size: var(--text-sm);
@@ -198,7 +200,7 @@
     padding: 0.1rem 0.375rem;
   }
 
-  .prose-spotlight pre {
+  :is(.prose-oatmeal, .prose-spotlight) pre {
     color: var(--tw-prose-pre-code);
     font-size: var(--text-sm);
     background-color: var(--tw-prose-pre-bg);
@@ -210,7 +212,7 @@
     margin-bottom: 1.75rem;
   }
 
-  .prose-spotlight pre code {
+  :is(.prose-oatmeal, .prose-spotlight) pre code {
     background: transparent;
     padding: 0;
     color: inherit;

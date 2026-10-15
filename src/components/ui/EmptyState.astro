@@ -1,11 +1,54 @@
 ---
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+import Heading from './Heading.astro';
+import Text from './Text.astro';
+
+/**
+ * Standardized EmptyState surface.
+ * Supports both raw `<slot />` children and structured `title` + `description` + action `<slot />`.
+ */
+interface Props extends HTMLAttributes<'div'> {
+  title?: string;
+  description?: string;
+  dashed?: boolean;
   class?: string;
 }
 
-const { class: className = '' } = Astro.props;
+const {
+  title,
+  description,
+  dashed = false,
+  class: className = '',
+  ...rest
+} = Astro.props;
 ---
 
-<div class:list={['rounded-2xl border border-olive-950/10 bg-white/60 p-6 sm:p-8 dark:border-white/10 dark:bg-white/5', className]}>
-  <slot />
+<div
+  class:list={[
+    dashed
+      ? 'rounded-2xl border border-dashed border-olive-950/20 p-10 text-center sm:p-12 dark:border-white/15'
+      : 'rounded-2xl border border-olive-950/10 bg-white/60 p-6 sm:p-8 dark:border-white/10 dark:bg-white/5',
+    className,
+  ]}
+  {...rest}
+>
+  {
+    title ? (
+      <>
+        <Heading level={3} size="md">
+          {title}
+        </Heading>
+        {description && (
+          <Text size="sm" class="mt-1">
+            {description}
+          </Text>
+        )}
+        <div class="mt-4">
+          <slot />
+        </div>
+      </>
+    ) : (
+      <slot />
+    )
+  }
 </div>

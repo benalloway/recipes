@@ -1,0 +1,35 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal Subheading (subheading.tsx) + Catalyst Subheading (heading.tsx).
+ * - `variant="display"` (default): Oatmeal Instrument Serif section heading
+ * - `variant="sans"`: Catalyst Inter semibold section/card subheading
+ */
+interface Props extends HTMLAttributes<'h2'> {
+  level?: 2 | 3 | 4;
+  variant?: 'display' | 'sans';
+  class?: string;
+}
+
+const {
+  level = 2,
+  variant = 'display',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const Tag = `h${level}` as 'h2' | 'h3' | 'h4';
+---
+
+<Tag
+  class:list={[
+    variant === 'display'
+      ? 'font-display text-[2rem]/10 tracking-tight text-pretty text-olive-950 sm:text-5xl/14 dark:text-white'
+      : 'font-sans text-sm/7 font-semibold text-olive-950 dark:text-white',
+    className,
+  ]}
+  {...rest}
+>
+  <slot />
+</Tag>

@@ -1,0 +1,40 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Tailwind UI Ecommerce category filter pill + MD3 44px touch target & aria-pressed state.
+ */
+interface Props extends HTMLAttributes<'button'> {
+  label: string;
+  count?: number;
+  pressed?: boolean;
+  class?: string;
+}
+
+const {
+  label,
+  count,
+  pressed = false,
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<button
+  type="button"
+  aria-pressed={pressed ? 'true' : 'false'}
+  class:list={[
+    'group relative inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-olive-950/15 bg-white/80 px-4 py-1.5 text-xs/6 font-semibold text-olive-950 shadow-2xs transition hover:border-olive-950/30 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive-700 aria-pressed:border-olive-950 aria-pressed:bg-olive-950 aria-pressed:text-white dark:border-white/15 dark:bg-olive-950 dark:text-white dark:hover:border-white/30 dark:focus-visible:outline-olive-300 dark:aria-pressed:border-olive-300 dark:aria-pressed:bg-olive-300 dark:aria-pressed:text-olive-950',
+    className,
+  ]}
+  {...rest}
+>
+  <span>{label}</span>
+  {
+    typeof count === 'number' && (
+      <span class="rounded-full bg-olive-950/8 px-1.5 py-0.5 text-[11px]/4 font-medium text-olive-700 group-aria-pressed:bg-white/20 group-aria-pressed:text-white dark:bg-white/10 dark:text-olive-300 dark:group-aria-pressed:bg-olive-950/20 dark:group-aria-pressed:text-olive-950">
+        {count}
+      </span>
+    )
+  }
+</button>

@@ -1,0 +1,43 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal Link (link.tsx) + Catalyst TextLink (text.tsx).
+ * - `inline` (default): Oatmeal inline CTA/action link (`inline-flex items-center gap-2 text-sm/7 font-medium`)
+ * - `underline`: Catalyst underlined inline prose link
+ * - `muted`: Back / breadcrumb link with 44px touch target
+ */
+const variantStyles = {
+  inline:
+    'inline-flex items-center gap-2 text-sm/7 font-medium text-olive-950 transition hover:text-olive-700 dark:text-white dark:hover:text-olive-300',
+  underline:
+    'font-medium text-olive-950 underline decoration-olive-950/35 underline-offset-4 transition hover:decoration-olive-950 dark:text-white dark:decoration-white/35 dark:hover:decoration-white',
+  muted:
+    'group inline-flex min-h-11 items-center gap-2 text-sm/7 font-medium text-olive-700 transition hover:text-olive-950 dark:text-olive-400 dark:hover:text-white',
+} as const;
+
+interface Props extends HTMLAttributes<'a'> {
+  href: string;
+  variant?: keyof typeof variantStyles;
+  external?: boolean;
+  class?: string;
+}
+
+const {
+  href,
+  variant = 'inline',
+  external = false,
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<a
+  href={href}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noreferrer' : undefined}
+  class:list={[variantStyles[variant], className]}
+  {...rest}
+>
+  <slot />
+</a>

@@ -1,0 +1,85 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal AnnouncementBadge (announcement-badge.tsx).
+ * Supports both static announcement pills and interactive linked pills with CTA.
+ */
+interface Props extends HTMLAttributes<'a'> {
+  text?: string;
+  href?: string;
+  cta?: string;
+  variant?: 'normal' | 'overlay';
+  class?: string;
+}
+
+const {
+  text,
+  href,
+  cta,
+  variant = 'normal',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const baseClass =
+  'group relative inline-flex max-w-full items-center gap-x-3 overflow-hidden rounded-full px-3 py-0.5 text-sm/6 font-medium transition';
+const variantClass =
+  variant === 'overlay'
+    ? 'bg-olive-950/15 text-white hover:bg-olive-950/20 dark:bg-olive-950/20 dark:hover:bg-olive-950/25'
+    : 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5';
+---
+
+{
+  href ? (
+    <a
+      href={href}
+      data-variant={variant}
+      class:list={[
+        baseClass,
+        variantClass,
+        variant === 'normal' && 'hover:bg-olive-950/10 dark:hover:bg-white/10',
+        className,
+      ]}
+      {...rest}
+    >
+      <span class="text-pretty sm:truncate">
+        {text ? text : <slot />}
+      </span>
+      {cta && (
+        <>
+          <span
+            class:list={[
+              'h-3 w-px max-sm:hidden',
+              variant === 'normal'
+                ? 'bg-olive-950/20 dark:bg-white/10'
+                : 'bg-white/20',
+            ]}
+          />
+          <span
+            class:list={[
+              'inline-flex shrink-0 items-center gap-1.5 font-semibold',
+              variant === 'normal' && 'text-olive-950 dark:text-white',
+            ]}
+          >
+            {cta}
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="size-3.5 stroke-current">
+              <path
+                d="M6.25 4.75 9.75 8l-3.5 3.25"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+        </>
+      )}
+    </a>
+  ) : (
+    <div data-variant={variant} class:list={[baseClass, variantClass, className]}>
+      <span class="text-pretty sm:truncate">
+        {text ? text : <slot />}
+      </span>
+    </div>
+  )
+}

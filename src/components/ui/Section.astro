@@ -1,22 +1,74 @@
 ---
+import Eyebrow from './Eyebrow.astro';
+import Subheading from './Subheading.astro';
+import Text from './Text.astro';
+
+/**
+ * Oatmeal Section + Spotlight/Catalyst labeled section grid.
+ * - When `headline` is passed: renders Oatmeal's stacked section header (Eyebrow + Subheading + Text)
+ * - Otherwise (`title` passed): renders the 4-column sidebar-labeled section grid
+ */
 interface Props {
-  title: string;
+  title?: string;
+  eyebrow?: string;
+  headline?: string;
+  subheadline?: string;
+  class?: string;
 }
 
-const { title } = Astro.props;
-const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+const {
+  title,
+  eyebrow,
+  headline,
+  subheadline,
+  class: className = '',
+} = Astro.props;
+
+const id = (title ?? headline ?? 'section')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-');
 ---
 
-<section
-  aria-labelledby={id}
-  class="md:border-l md:border-olive-950/10 md:pl-6 md:dark:border-white/10"
->
-  <div class="grid max-w-3xl grid-cols-1 items-baseline gap-y-8 md:grid-cols-4">
-    <h2 id={id} class="text-sm/7 font-semibold text-olive-950 dark:text-white">
-      {title}
-    </h2>
-    <div class="md:col-span-3">
-      <slot />
-    </div>
-  </div>
-</section>
+{
+  headline ? (
+    <section aria-labelledby={id} class:list={['py-12 sm:py-16', className]}>
+      <div class="flex flex-col gap-10 sm:gap-14">
+        <div class="flex max-w-2xl flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+            <Subheading id={id} level={2} variant="display">
+              {headline}
+            </Subheading>
+          </div>
+          {subheadline && (
+            <Text size="md" class="text-pretty">
+              {subheadline}
+            </Text>
+          )}
+        </div>
+        <div>
+          <slot />
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section
+      aria-labelledby={id}
+      class:list={[
+        'md:border-l md:border-olive-950/10 md:pl-6 md:dark:border-white/10',
+        className,
+      ]}
+    >
+      <div class="grid max-w-3xl grid-cols-1 items-baseline gap-y-8 md:grid-cols-4">
+        {title && (
+          <Subheading id={id} level={2} variant="sans">
+            {title}
+          </Subheading>
+        )}
+        <div class="md:col-span-3">
+          <slot />
+        </div>
+      </div>
+    </section>
+  )
+}

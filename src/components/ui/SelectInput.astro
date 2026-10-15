@@ -1,8 +1,14 @@
 ---
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Catalyst-style rounded-xl bordered select input.
+ * Supports either `options={[{ value, label }]}` or `<slot />` option elements.
+ */
+interface Props extends HTMLAttributes<'select'> {
   id: string;
-  name: string;
-  options: Array<{ value: string; label: string }>;
+  name?: string;
+  options?: Array<{ value: string; label: string }>;
   value?: string;
   required?: boolean;
   invalid?: boolean;
@@ -21,6 +27,7 @@ const {
   describedby,
   ariaLabel,
   class: className = '',
+  ...rest
 } = Astro.props;
 ---
 
@@ -38,12 +45,17 @@ const {
       : 'border-olive-950/10 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 dark:border-white/10',
     className,
   ]}
+  {...rest}
 >
   {
-    options.map((opt) => (
-      <option value={opt.value} selected={opt.value === value || undefined}>
-        {opt.label}
-      </option>
-    ))
+    options ? (
+      options.map((opt) => (
+        <option value={opt.value} selected={opt.value === value || undefined}>
+          {opt.label}
+        </option>
+      ))
+    ) : (
+      <slot />
+    )
   }
 </select>

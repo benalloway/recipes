@@ -1,0 +1,52 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Oatmeal Heading (heading.tsx) + Catalyst Heading levels.
+ * Centralizes all display headings (Instrument Serif) in one place.
+ */
+const sizeStyles = {
+  display: 'text-5xl/12 tracking-tight text-balance sm:text-[5rem]/20',
+  xl: 'text-4xl/11 tracking-tight text-balance sm:text-6xl/16',
+  lg: 'text-[2rem]/10 tracking-tight text-pretty sm:text-5xl/14',
+  md: 'text-2xl/8 tracking-tight text-pretty sm:text-3xl/10',
+  sm: 'text-xl/7 tracking-tight text-pretty',
+} as const;
+
+const defaultSizeByLevel = {
+  1: 'display',
+  2: 'lg',
+  3: 'md',
+  4: 'sm',
+} as const;
+
+interface Props extends HTMLAttributes<'h1'> {
+  level?: 1 | 2 | 3 | 4;
+  size?: keyof typeof sizeStyles;
+  color?: 'dark/light' | 'light';
+  class?: string;
+}
+
+const {
+  level = 1,
+  size,
+  color = 'dark/light',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4';
+const resolvedSize = size ?? defaultSizeByLevel[level];
+---
+
+<Tag
+  class:list={[
+    'font-display',
+    sizeStyles[resolvedSize],
+    color === 'dark/light' ? 'text-olive-950 dark:text-white' : 'text-white',
+    className,
+  ]}
+  {...rest}
+>
+  <slot />
+</Tag>

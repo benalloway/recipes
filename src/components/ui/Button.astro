@@ -1,22 +1,46 @@
 ---
+import type { HTMLAttributes } from 'astro/types';
+
 /**
- * Oatmeal Button elements (button.tsx) + MD3 TouchTarget expansion.
- * Variant names kept stable so pages don't churn: primary = Oatmeal
- * dark/light, secondary = Oatmeal soft, teal = primary alias.
+ * Oatmeal Button / SoftButton / PlainButton (button.tsx) + Catalyst Button / TouchTarget.
+ * Single source of truth for all buttons and button-styled links across benalloway.com.
+ *
+ * Variants:
+ * - `primary` (or `teal`): Oatmeal solid dark/light pill
+ * - `secondary` (or `soft`): Oatmeal SoftButton tonal pill
+ * - `outline`: Catalyst outline pill in olive tokens
+ * - `plain`: Oatmeal PlainButton ghost pill
+ * - `light`: Oatmeal light pill for dark/hero surfaces
  */
 const variantStyles = {
   primary:
     'bg-olive-950 text-white hover:bg-olive-800 active:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200 dark:active:bg-olive-200',
   secondary:
     'bg-olive-950/10 text-olive-950 hover:bg-olive-950/15 active:bg-olive-950/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/20',
+  soft:
+    'bg-olive-950/10 text-olive-950 hover:bg-olive-950/15 active:bg-olive-950/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/20',
+  outline:
+    'border border-olive-950/15 bg-white/70 text-olive-950 shadow-2xs hover:border-olive-950/25 hover:bg-white dark:border-white/15 dark:bg-olive-950 dark:text-white dark:hover:border-white/25 dark:hover:bg-white/5',
+  plain:
+    'text-olive-950 hover:bg-olive-950/10 active:bg-olive-950/15 dark:text-white dark:hover:bg-white/10 dark:active:bg-white/15',
+  light:
+    'bg-white text-olive-950 hover:bg-olive-100 active:bg-olive-100 dark:bg-olive-100 dark:text-olive-950 dark:hover:bg-white',
   teal:
     'bg-olive-950 text-white hover:bg-olive-800 active:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200 dark:active:bg-olive-200',
 } as const;
 
-interface Props {
+const sizeStyles = {
+  sm: 'min-h-10 px-3 py-1 text-xs/6 gap-1.5',
+  md: 'min-h-11 px-3.5 py-1.5 text-sm/7 gap-1.5',
+  lg: 'min-h-11 px-4 py-2 text-sm/7 gap-2',
+  icon: 'size-11 p-0',
+  'icon-lg': 'size-12 p-0',
+} as const;
+
+interface Props extends HTMLAttributes<'button'>, HTMLAttributes<'a'> {
   href?: string;
   variant?: keyof typeof variantStyles;
-  size?: 'md' | 'lg';
+  size?: keyof typeof sizeStyles;
   type?: 'button' | 'submit' | 'reset';
   class?: string;
 }
@@ -27,16 +51,20 @@ const {
   size = 'md',
   type = 'button',
   class: className = '',
+  ...rest
 } = Astro.props;
 
-const sizeClass = size === 'lg' ? 'px-4 py-2' : 'px-3 py-1';
 const baseClass =
-  'relative isolate inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-full text-sm/7 font-medium transition active:transition-none';
+  'relative isolate inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full font-medium transition active:scale-[0.99] active:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive-700 disabled:pointer-events-none disabled:opacity-50 dark:focus-visible:outline-olive-300';
 ---
 
 {
   href ? (
-    <a href={href} class:list={[baseClass, sizeClass, variantStyles[variant], className]}>
+    <a
+      href={href}
+      class:list={[baseClass, sizeStyles[size], variantStyles[variant], className]}
+      {...rest}
+    >
       <span
         class="absolute top-1/2 left-1/2 size-[max(100%,2.75rem)] -translate-x-1/2 -translate-y-1/2 pointer-fine:hidden"
         aria-hidden="true"
@@ -46,7 +74,8 @@ const baseClass =
   ) : (
     <button
       type={type}
-      class:list={[baseClass, sizeClass, variantStyles[variant], className]}
+      class:list={[baseClass, sizeStyles[size], variantStyles[variant], className]}
+      {...rest}
     >
       <span
         class="absolute top-1/2 left-1/2 size-[max(100%,2.75rem)] -translate-x-1/2 -translate-y-1/2 pointer-fine:hidden"
