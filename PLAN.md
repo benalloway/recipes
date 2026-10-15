@@ -85,21 +85,19 @@ purely in tags. Free-form `unit` TEXT already accommodates drinks vocabulary
 - `/favorites`, `/tags/[slug]`
 - `/media/*` → R2 (portability: swap to S3 = one file)
 
-## Design system (American Psycho business card)
+## Design system (Oatmeal olive-instrument on @benalloway/ui)
 
-Implemented with Tailwind CSS v4 (CSS-first config, `@tailwindcss/vite`).
-Same tokens, same look — no visual change from the swap:
+Superseded by ADR-0003 (Oatmeal reskin, shared UI, `/recipes` home). Current
+state, implemented with Tailwind CSS v4 (`@tailwindcss/vite`, preflight on):
 
-- Bone white `#FBFBF9`; white surfaces; hairline `#E3E3E0`; ink `#1A1A1A`;
-  muted `#8A8A86`; single accent `#9A8C7C` (links/focus only)
-- Tokens live in `@theme` in `src/styles/global.css` → utilities `bg-bg`,
-  `bg-surface`, `border-hairline`, `text-ink`, `text-muted`, `text-accent`,
-  `font-sans`. Base element styles stay in `@layer base` in the same file
-- Preflight is intentionally off (browser defaults preserved for unstyled
-  elements); enabling it would be a visual change needing a design decision
-- System type stack: Helvetica Neue → Helvetica → Arial; 10px letter-spaced
-  uppercase micro-labels; light 22–28px headings; tabular numerals
-- 8px grid; hairline flat cards; no shadows; ≤2px radius; motion = 120ms opacity only
+- Olive tokens `--color-olive-50…950` in `@theme` (vendored
+  `src/styles/global.css` from `@benalloway/ui`); Instrument Serif display +
+  Inter body; rounded-full pill buttons; tonal badges/surfaces
+- Shared atoms vendored into `src/components/ui/` (pinned
+  `scripts/ui-version.txt`, sync via `scripts/sync-ui.sh`); app shells
+  (nav, cards, forms, islands) compose them in this repo
+- Catalyst-style form blocks, MD3 `min-h-11`/`min-h-12` targets, dark mode
+- Served under Astro `base: '/recipes'`; all URLs via `src/lib/base.ts` `u()`
 
 ## Milestones
 
