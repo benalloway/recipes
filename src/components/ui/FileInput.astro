@@ -1,0 +1,21 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  accept?: string;
+  describedby?: string;
+  extraAttrs?: Record<string, string>;
+}
+
+const { id, name, accept, describedby, extraAttrs = {} } = Astro.props;
+---
+
+<input
+  id={id}
+  name={name}
+  type="file"
+  accept={accept}
+  aria-describedby={describedby || undefined}
+  class="block min-h-11 w-full cursor-pointer rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-sm/7 text-olive-950 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-olive-950/10 file:px-3 file:py-1 file:text-sm/7 file:font-medium file:text-olive-950 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden dark:border-white/10 dark:bg-olive-950 dark:text-white dark:file:bg-white/10 dark:file:text-white"
+  {...extraAttrs}
+/>

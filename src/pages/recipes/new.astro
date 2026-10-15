@@ -1,6 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Container from '../../components/ui/Container.astro';
+import PageHeader from '../../components/ui/PageHeader.astro';
 import RecipeForm from '../../components/RecipeForm.astro';
+import { u } from '../../lib/base';
 import { getBlobs } from '../../lib/adapters/blobs';
 import { getDb } from '../../lib/adapters/db';
 import { readImageUpload, storeRecipeImage } from '../../lib/images';
@@ -17,7 +20,7 @@ import { createRecipe, INGREDIENT_FORM_ROWS, parseRecipeForm, RecipeValidationEr
 
 const session = Astro.locals.session;
 if (!session) {
-  return Astro.redirect('/login', 302);
+  return Astro.redirect(u('/login'), 302);
 }
 
 const db = getDb(Astro.locals);
@@ -39,7 +42,7 @@ if (Astro.request.method === 'POST') {
     form = await Astro.request.formData();
   } catch {
     // Unreadable body: nothing to re-render, keep the deep-linkable code.
-    return Astro.redirect('/recipes/new?error=unknown', 303);
+    return Astro.redirect(u('/recipes/new?error=unknown'), 303);
   }
   const knownTagSlugs = new Set(
     (
@@ -53,7 +56,7 @@ if (Astro.request.method === 'POST') {
     if (upload) {
       await storeRecipeImage(db, getBlobs(Astro.locals), id, upload);
     }
-    return Astro.redirect(`/recipes/${id}`, 303);
+    return Astro.redirect(u(`/recipes/${id}`), 303);
   } catch (err) {
     if (err instanceof RecipeValidationError) {
       // Re-render with everything typed intact + an inline error (422).
@@ -81,17 +84,20 @@ const allTags =
 ---
 
 <Base title="New recipe">
-  <main class="mx-auto max-w-xl px-6 py-16">
-    <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-      <a href="/" class="text-accent">
-        ← Recipes
-      </a>
-    </p>
-    <h1 class="mt-4 text-2xl font-light tracking-tight">New recipe</h1>
-    <p class="mt-2 font-hand text-lg text-muted">Good recipes are written in pencil — taste as you go.</p>
+  <Container class="mt-12 sm:mt-16">
+    <div class="mx-auto max-w-2xl">
+      <p class="mb-2 text-sm/7 font-semibold text-olive-700 dark:text-olive-400">
+        <a href={u('/')} class="transition hover:opacity-60">
+          ← Recipes
+        </a>
+      </p>
+      <PageHeader
+        title="New recipe"
+        intro="Good recipes are written in pencil — taste as you go."
+      />
 
-    <RecipeForm
-      action="/recipes/new"
+      <RecipeForm
+        action={u('/recipes/new')}
       submitLabel="Save recipe"
       values={values}
       fieldErrors={fieldErrors}
@@ -100,5 +106,6 @@ const allTags =
       canonicalIngredients={canonicalIngredients}
       imageReplace={false}
     />
-  </main>
+    </div>
+  </Container>
 </Base>

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { u } from '../lib/base';
 
 interface Props {
   title: string;
@@ -7,47 +8,255 @@ interface Props {
 
 const { title } = Astro.props;
 const session = Astro.locals.session;
+const pathname = Astro.url.pathname;
 
-const navLink = 'font-sans text-xs uppercase tracking-[0.2em] text-accent';
+const navItems = [
+  { href: u('/'), label: 'Recipes' },
+  { href: u('/favorites'), label: 'Favorites' },
+  { href: u('/recipes/new'), label: 'New' },
+];
+
+function isActive(href: string, currentPath: string) {
+  if (href === u('/')) return currentPath === href;
+  return currentPath === href || currentPath.startsWith(`${href}/`);
+}
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full antialiased">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <link rel="icon" href={u('/favicon.ico')} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+      rel="stylesheet"
+    />
     <title>{title} — Recipes</title>
-  </head>
-  <body>
-    <header class="border-b border-hairline">
-      <nav aria-label="Primary" class="mx-auto flex max-w-xl items-baseline justify-between px-6 py-4">
-        <a href="/" class="text-[10px] font-medium uppercase tracking-[0.28em] text-ink">Recipes</a>
-        <div class="flex items-center gap-5">
-          <a href="/" class={navLink}>Recipes</a>
-          <a href="/favorites" class={navLink}>
-            Favorites
-          </a>
-          <a href="/recipes/new" class={navLink}>New</a>
-          {
-            session ? (
-              <form method="post" action="/auth/logout" class="m-0">
-                <button
-                  type="submit"
-                  class="cursor-pointer border-0 bg-transparent p-0 font-sans text-xs uppercase tracking-[0.2em] text-muted"
-                >
-                  Log out
-                </button>
-              </form>
-            ) : (
-              <a href="/login" class={navLink}>
-                Sign in
-              </a>
-            )
+    <script is:inline>
+      (() => {
+        try {
+          const saved = localStorage.getItem('theme');
+          const prefersDark = window.matchMedia(
+            '(prefers-color-scheme: dark)',
+          ).matches;
+          if (saved === 'dark' || (!saved && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
           }
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body class="bg-olive-100 font-sans text-olive-950 dark:bg-olive-950 dark:text-white">
+    <header class="sticky top-0 z-10 bg-olive-100 dark:bg-olive-950">
+      <nav aria-label="Primary">
+        <div class="mx-auto flex h-[var(--scroll-padding-top)] max-w-7xl items-center gap-4 px-6 lg:px-10">
+          <div class="flex flex-1 items-center">
+            <a
+              href={u('/')}
+              aria-label="Recipes — Home"
+              class="inline-flex min-h-12 items-center font-display text-xl tracking-tight whitespace-nowrap text-olive-950 transition hover:opacity-70 dark:text-white"
+            >
+              Recipes
+            </a>
+          </div>
+
+          <div class="hidden flex-1 justify-center gap-8 lg:flex">
+            {
+              navItems.map((item) => {
+                const active = isActive(item.href, pathname);
+                return (
+                  <a
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    class:list={[
+                      'inline-flex min-h-11 items-center text-sm/7 font-medium whitespace-nowrap transition',
+                      active
+                        ? 'text-olive-950 underline decoration-olive-500 decoration-2 underline-offset-8 dark:text-white dark:decoration-olive-300'
+                        : 'text-olive-950/70 hover:text-olive-950 dark:text-white/70 dark:hover:text-white',
+                    ]}
+                  >
+                    {item.label}
+                  </a>
+                );
+              })
+            }
+          </div>
+
+          <div class="flex flex-1 items-center justify-end gap-2">
+            <div class="hidden lg:block">
+              {
+                session ? (
+                  <form method="post" action={u('/auth/logout')} class="m-0">
+                    <button
+                      type="submit"
+                      class="inline-flex min-h-11 cursor-pointer items-center rounded-full px-3 py-1 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/10 dark:text-white dark:hover:bg-white/10"
+                    >
+                      Log out
+                    </button>
+                  </form>
+                ) : (
+                  <a
+                    href={u('/login')}
+                    class="inline-flex min-h-11 items-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+                  >
+                    Sign in
+                  </a>
+                )
+              }
+            </div>
+
+            <button
+              type="button"
+              data-theme-toggle
+              aria-label="Toggle color theme"
+              class="relative inline-flex size-11 items-center justify-center rounded-full text-olive-950 transition hover:bg-olive-950/10 active:scale-[0.98] dark:text-white dark:hover:bg-white/10"
+            >
+              <span
+                class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-x-1/2 -translate-y-1/2 pointer-fine:hidden"
+                aria-hidden="true"></span>
+              <svg
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                class="size-5 fill-olive-950/5 stroke-current transition dark:hidden"
+              >
+                <path d="M8 12.25A4.25 4.25 0 0 1 12.25 8v0a4.25 4.25 0 0 1 4.25 4.25v0a4.25 4.25 0 0 1-4.25 4.25v0A4.25 4.25 0 0 1 8 12.25v0Z"></path>
+                <path
+                  d="M12.25 3v1.5M21.5 12.25H20M18.791 18.791l-1.06-1.06M18.791 5.709l-1.06 1.06M12.25 20v1.5M4.5 12.25H3M6.77 6.77 5.709 5.709M6.77 17.73l-1.061 1.061"
+                  fill="none"></path>
+              </svg>
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                class="hidden size-5 fill-current transition dark:block"
+              >
+                <path
+                  d="M17.25 16.22a6.937 6.937 0 0 1-9.47-9.47 7.451 7.451 0 1 0 9.47 9.47ZM12.75 7C17 7 17 2.75 17 2.75S17 7 21.25 7C17 7 17 11.25 17 11.25S17 7 12.75 7Z"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              data-mobile-menu-open
+              aria-haspopup="dialog"
+              aria-expanded="false"
+              aria-controls="mobile-nav-dialog"
+              aria-label="Open navigation menu"
+              class="relative inline-flex size-11 items-center justify-center rounded-full text-olive-950 transition hover:bg-olive-950/10 active:scale-[0.98] lg:hidden dark:text-white dark:hover:bg-white/10"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-6">
+                <path
+                  fill-rule="evenodd"
+                  d="M3.748 8.248a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75ZM3.748 15.75a.75.75 0 0 1 .75-.751h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75Z"
+                  clip-rule="evenodd"></path>
+              </svg>
+            </button>
+          </div>
         </div>
+
+        <dialog
+          id="mobile-nav-dialog"
+          aria-label="Mobile navigation"
+          class="fixed inset-0 z-50 m-0 h-full w-full max-h-none max-w-none bg-transparent p-0 backdrop:bg-transparent"
+        >
+          <div
+            data-mobile-menu-panel
+            class="fixed inset-0 bg-olive-100 px-6 py-6 lg:px-10 dark:bg-olive-950"
+          >
+            <div class="flex justify-end">
+              <button
+                type="button"
+                data-mobile-menu-close
+                aria-label="Close navigation menu"
+                class="relative inline-flex size-12 items-center justify-center rounded-full text-olive-950 transition hover:bg-olive-950/10 dark:text-white dark:hover:bg-white/10"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                  class="size-6"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <nav aria-label="Mobile" class="mt-6">
+              <div class="flex flex-col gap-2">
+                {
+                  navItems.map((item) => {
+                    const active = isActive(item.href, pathname);
+                    return (
+                      <a
+                        href={item.href}
+                        aria-current={active ? 'page' : undefined}
+                        class:list={[
+                          'group inline-flex min-h-12 items-center justify-between gap-2 text-3xl/10 font-medium transition',
+                          active
+                            ? 'text-olive-950 dark:text-white'
+                            : 'text-olive-950/80 hover:text-olive-950 dark:text-white/80 dark:hover:text-white',
+                        ]}
+                      >
+                        <span>{item.label}</span>
+                        <span
+                          class="inline-flex p-1.5 opacity-0 transition group-hover:opacity-100"
+                          aria-hidden="true"
+                        >
+                          <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                          </svg>
+                        </span>
+                      </a>
+                    );
+                  })
+                }
+                <div class="mt-4 border-t border-olive-950/10 pt-6 dark:border-white/10">
+                  {
+                    session ? (
+                      <form method="post" action={u('/auth/logout')} class="m-0">
+                        <button
+                          type="submit"
+                          class="inline-flex min-h-12 cursor-pointer items-center text-3xl/10 font-medium text-olive-950/80 dark:text-white/80"
+                        >
+                          Log out
+                        </button>
+                      </form>
+                    ) : (
+                      <a
+                        href={u('/login')}
+                        class="inline-flex min-h-12 items-center text-3xl/10 font-medium text-olive-950 dark:text-white"
+                      >
+                        Sign in
+                      </a>
+                    )
+                  }
+                </div>
+              </div>
+            </nav>
+          </div>
+        </dialog>
       </nav>
     </header>
-    <slot />
+    <main class="isolate overflow-clip">
+      <slot />
+    </main>
+    <script src="../components/site-nav.ts"></script>
   </body>
 </html>

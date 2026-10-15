@@ -1,0 +1,62 @@
+---
+/**
+ * Catalyst-style rounded-xl bordered text input (Astro-native, no JS).
+ * `invalid` + `describedby` keep server re-rendered errors accessible.
+ */
+interface Props {
+  id: string;
+  name: string;
+  type?: 'text' | 'email' | 'password' | 'search' | 'tel' | 'url' | 'number';
+  value?: string;
+  placeholder?: string;
+  required?: boolean;
+  maxlength?: number;
+  autocomplete?: string;
+  inputmode?: 'text' | 'decimal' | 'numeric' | 'email' | 'search' | 'tel' | 'url';
+  list?: string;
+  invalid?: boolean;
+  describedby?: string;
+  ariaLabel?: string;
+  class?: string;
+}
+
+const {
+  id,
+  name,
+  type = 'text',
+  value = '',
+  placeholder,
+  required = false,
+  maxlength,
+  autocomplete,
+  inputmode,
+  list,
+  invalid = false,
+  describedby,
+  ariaLabel,
+  class: className = '',
+} = Astro.props;
+---
+
+<input
+  id={id}
+  name={name}
+  type={type}
+  value={value}
+  placeholder={placeholder}
+  required={required || undefined}
+  maxlength={maxlength}
+  autocomplete={autocomplete}
+  inputmode={inputmode}
+  list={list}
+  aria-invalid={invalid ? 'true' : undefined}
+  aria-describedby={describedby || undefined}
+  aria-label={ariaLabel || undefined}
+  class:list={[
+    'block min-h-12 w-full rounded-xl border bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:outline-hidden sm:min-h-10 sm:text-sm dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500',
+    invalid
+      ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+      : 'border-olive-950/10 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 dark:border-white/10',
+    className,
+  ]}
+/>

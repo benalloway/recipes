@@ -1,4 +1,6 @@
 ---
+import { u } from '../lib/base';
+
 interface Props {
   name: string;
   slug: string;
@@ -7,4 +9,7 @@ interface Props {
 const { name, slug } = Astro.props;
 ---
 
-<a href={`/tags/${slug}`} class="text-xs uppercase tracking-[0.2em] text-accent">{name}</a>
+<a
+  href={u(`/tags/${slug}`)}
+  class="inline-flex min-h-8 items-center rounded-full bg-olive-950/5 px-3 py-0.5 text-xs font-medium text-olive-950 transition hover:bg-olive-950/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+>{name}</a>

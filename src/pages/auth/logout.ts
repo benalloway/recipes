@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { u } from '../../lib/base';
 import { getDb } from '../../lib/adapters/db';
 import { SESSION_COOKIE, deleteSession } from '../../lib/auth';
 
@@ -10,10 +11,10 @@ export const POST: APIRoute = async (context) => {
   }
   // Mirror the creation attributes so browsers reliably clear the cookie.
   context.cookies.delete(SESSION_COOKIE, {
-    path: '/',
+    path: u('/'),
     httpOnly: true,
     secure: context.url.protocol === 'https:',
     sameSite: 'lax',
   });
-  return context.redirect('/login', 303);
+  return context.redirect(u('/login'), 303);
 };

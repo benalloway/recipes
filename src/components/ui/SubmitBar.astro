@@ -1,0 +1,17 @@
+---
+interface Props {
+  submitLabel: string;
+  class?: string;
+}
+
+const { submitLabel, class: className = '' } = Astro.props;
+---
+
+<div class:list={['sticky bottom-0 -mx-6 mt-8 border-t border-olive-950/10 bg-olive-100/95 px-6 py-3 backdrop-blur-sm dark:border-white/10 dark:bg-olive-950/95', className]}>
+  <button
+    type="submit"
+    class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 active:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+  >
+    {submitLabel}
+  </button>
+</div>

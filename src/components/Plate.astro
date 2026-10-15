@@ -1,8 +1,8 @@
 ---
 /**
- * Plate — user photo in the Cardstock frame (ADR-0002): fixed 4:3 aspect,
- * paprika tint at low opacity. Pass the recipe title as alt; pass alt=""
- * only for decorative thumbnails.
+ * Plate — user photo in a restrained Oatmeal frame: fixed 4:3 aspect,
+ * rounded corners, hairline ring. Pass the recipe title as alt; pass
+ * alt="" only for decorative thumbnails.
  */
 interface Props {
   src: string;
@@ -12,9 +12,8 @@ interface Props {
 const { src, alt } = Astro.props;
 ---
 
-<figure class="m-0 border border-hairline bg-surface p-2">
-  <span class="relative block aspect-[4/3] w-full overflow-hidden">
-    <img src={src} alt={alt} class="absolute inset-0 h-full w-full object-cover" />
-    <span aria-hidden="true" class="pointer-events-none absolute inset-0 bg-accent opacity-10"></span>
+<figure class="m-0 overflow-hidden rounded-xl ring-1 ring-olive-950/10 dark:ring-white/10">
+  <span class="relative block aspect-[4/3] w-full overflow-hidden bg-olive-950/5 dark:bg-white/5">
+    <img src={src} alt={alt} loading="lazy" class="absolute inset-0 h-full w-full object-cover" />
   </span>
 </figure>

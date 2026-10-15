@@ -1,0 +1,34 @@
+---
+/**
+ * Oatmeal announcement-badge visuals with Catalyst color API kept stable.
+ * Strong colors (teal/emerald/indigo) render as solid olive pills;
+ * the rest render as soft olive tonal pills.
+ */
+const colors = {
+  teal: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
+  emerald: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
+  indigo: 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950',
+  zinc: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
+  amber: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
+  sky: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
+  rose: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
+  purple: 'bg-olive-950/5 text-olive-950 dark:bg-white/5 dark:text-white dark:inset-ring-1 dark:inset-ring-white/5',
+} as const;
+
+interface Props {
+  color?: keyof typeof colors;
+  class?: string;
+}
+
+const { color = 'zinc', class: className = '' } = Astro.props;
+---
+
+<span
+  class:list={[
+    'inline-flex max-w-full items-center gap-x-1.5 rounded-full px-3 py-0.5 text-sm/6 font-medium',
+    colors[color],
+    className,
+  ]}
+>
+  <slot />
+</span>

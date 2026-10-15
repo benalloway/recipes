@@ -1,6 +1,7 @@
 ---
 /**
- * Shared new/edit recipe form — Cardstock 2 (issue #45).
+ * Shared new/edit recipe form — Catalyst blocks on the @benalloway/ui
+ * primitives (vendored in ./ui), MD3 touch targets throughout.
  *
  * Server re-renders with submitted `values` + inline `fieldErrors`
  * (never wipes input on validation failure). Ingredient rows are
@@ -8,7 +9,13 @@
  * server-rendered rows post untouched. Submit sits in a sticky
  * bottom bar so it stays visible on small viewports.
  */
-import ImageField from './ImageField.astro';
+import Field from './ui/Field.astro';
+import TextInput from './ui/TextInput.astro';
+import TextareaInput from './ui/TextareaInput.astro';
+import CheckboxItem from './ui/CheckboxItem.astro';
+import FileInput from './ui/FileInput.astro';
+import FormAlert from './ui/FormAlert.astro';
+import SubmitBar from './ui/SubmitBar.astro';
 import type { RecipeFormField, RecipeFormValues } from '../lib/recipe-form';
 
 interface Props {
@@ -35,13 +42,6 @@ const {
 
 const checkedSlugs = new Set(values.tagSlugs);
 
-const textInputClass =
-  'mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent';
-const rowInputClass =
-  'w-full border-0 border-b border-hairline bg-transparent py-2 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent';
-const labelClass = 'text-[10px] font-medium uppercase tracking-[0.28em] text-muted';
-const errorClass = 'mt-1 text-sm text-accent';
-
 function describedBy(field: RecipeFormField): string | undefined {
   return fieldErrors[field] ? `${field}-error` : undefined;
 }
@@ -49,188 +49,220 @@ function describedBy(field: RecipeFormField): string | undefined {
 
 {
   summaryError && (
-    <div role="alert" class="mt-6 border border-hairline bg-surface px-6 py-4">
-      <p class="text-sm text-ink">{summaryError}</p>
+    <div class="mt-6">
+      <FormAlert message={summaryError} />
     </div>
   )
 }
 
 <form method="post" action={action} enctype="multipart/form-data" class="mt-8">
-  <label for="title" class={labelClass}>Title</label>
-  <input
-    id="title"
-    name="title"
-    type="text"
+  <Field
+    label="Title"
+    forId="title"
     required
-    maxlength="200"
-    placeholder="Tomato soup"
-    value={values.title}
-    aria-invalid={fieldErrors.title ? 'true' : undefined}
-    aria-describedby={describedBy('title')}
-    class={textInputClass}
-  />
-  {fieldErrors.title && <p id="title-error" class={errorClass}>{fieldErrors.title}</p>}
+    error={fieldErrors.title}
+    errorId="title-error"
+  >
+    <TextInput
+      id="title"
+      name="title"
+      required
+      maxlength={200}
+      placeholder="Tomato soup"
+      value={values.title}
+      invalid={!!fieldErrors.title}
+      describedby={describedBy('title')}
+    />
+  </Field>
 
-  <label for="servings" class={`mt-8 block ${labelClass}`}>Servings (blank for none)</label>
-  <input
-    id="servings"
-    name="servings"
-    type="text"
-    inputmode="decimal"
-    placeholder="4"
-    value={values.servings}
-    aria-invalid={fieldErrors.servings ? 'true' : undefined}
-    aria-describedby={describedBy('servings')}
-    class={textInputClass}
-  />
-  {fieldErrors.servings && <p id="servings-error" class={errorClass}>{fieldErrors.servings}</p>}
+  <Field
+    label="Servings (blank for none)"
+    forId="servings"
+    error={fieldErrors.servings}
+    errorId="servings-error"
+  >
+    <TextInput
+      id="servings"
+      name="servings"
+      inputmode="decimal"
+      placeholder="4"
+      value={values.servings}
+      invalid={!!fieldErrors.servings}
+      describedby={describedBy('servings')}
+    />
+  </Field>
 
-  <label for="instructions" class={`mt-8 block ${labelClass}`}>Instructions (one step per line)</label>
-  <textarea
-    id="instructions"
-    name="instructions"
+  <Field
+    label="Instructions (one step per line)"
+    forId="instructions"
     required
-    rows="6"
-    placeholder={'Chop\nSimmer'}
-    aria-invalid={fieldErrors.instructions ? 'true' : undefined}
-    aria-describedby={describedBy('instructions')}
-    class="mt-2 w-full border border-hairline bg-transparent px-4 py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-  >{values.instructions}</textarea>
-  {fieldErrors.instructions && <p id="instructions-error" class={errorClass}>{fieldErrors.instructions}</p>}
+    error={fieldErrors.instructions}
+    errorId="instructions-error"
+  >
+    <TextareaInput
+      id="instructions"
+      name="instructions"
+      required
+      rows={6}
+      placeholder={'Chop\nSimmer'}
+      value={values.instructions}
+      invalid={!!fieldErrors.instructions}
+      describedby={describedBy('instructions')}
+    />
+  </Field>
 
-  <h2 class={`mt-8 ${labelClass}`}>Ingredients</h2>
-  {fieldErrors.ingredients && <p id="ingredients-error" class={errorClass}>{fieldErrors.ingredients}</p>}
-  <datalist id="canonical-ingredients">
-    {canonicalIngredients.map((name) => (
-      <option value={name} />
-    ))}
-  </datalist>
-  <div data-ingredient-rows data-next-index={values.ingredients.length}>
-    {values.ingredients.map((row, i) => (
-      <div data-ingredient-row class="mt-4 grid grid-cols-2 gap-4 border-t border-hairline pt-4">
+  <div class="mt-8">
+    <h2 class="block text-sm/7 font-medium text-olive-950 dark:text-white">Ingredients</h2>
+    {fieldErrors.ingredients && (
+      <p id="ingredients-error" role="alert" class="mt-1.5 text-sm/6 text-red-700 dark:text-red-400">
+        {fieldErrors.ingredients}
+      </p>
+    )}
+    <datalist id="canonical-ingredients">
+      {canonicalIngredients.map((name) => (
+        <option value={name} />
+      ))}
+    </datalist>
+    <div data-ingredient-rows data-next-index={values.ingredients.length} class="mt-2 space-y-3">
+      {values.ingredients.map((row, i) => (
+        <div
+          data-ingredient-row
+          class="grid grid-cols-2 gap-3 rounded-2xl border border-olive-950/10 bg-white/60 p-4 dark:border-white/10 dark:bg-white/5"
+        >
+          <input
+            name={`ing-name-${i}`}
+            type="text"
+            maxlength="100"
+            list="canonical-ingredients"
+            placeholder="Ingredient"
+            aria-label={`Ingredient ${i + 1} name`}
+            value={row.name}
+            class="col-span-2 block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
+          />
+          <input
+            name={`ing-qty-${i}`}
+            type="text"
+            inputmode="decimal"
+            placeholder="Qty"
+            aria-label={`Ingredient ${i + 1} quantity`}
+            value={row.qty}
+            class="block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
+          />
+          <input
+            name={`ing-unit-${i}`}
+            type="text"
+            maxlength="20"
+            placeholder="Unit"
+            aria-label={`Ingredient ${i + 1} unit`}
+            value={row.unit}
+            class="block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
+          />
+          <input
+            name={`ing-note-${i}`}
+            type="text"
+            maxlength="200"
+            placeholder="Note (optional)"
+            aria-label={`Ingredient ${i + 1} note`}
+            value={row.note}
+            class="col-span-2 block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
+          />
+          <button
+            type="button"
+            data-remove-row
+            hidden
+            class="col-span-2 inline-flex min-h-11 cursor-pointer items-center justify-self-start rounded-full px-3 py-1 text-sm/7 font-medium text-olive-700 transition hover:bg-olive-950/5 dark:text-olive-300 dark:hover:bg-white/5"
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+    <button
+      type="button"
+      data-add-row
+      hidden
+      class="mt-4 inline-flex min-h-11 cursor-pointer items-center rounded-full bg-olive-950/10 px-4 py-2 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+    >
+      + Add ingredient
+    </button>
+    <template data-row-template>
+      <div
+        data-ingredient-row
+        class="grid grid-cols-2 gap-3 rounded-2xl border border-olive-950/10 bg-white/60 p-4 dark:border-white/10 dark:bg-white/5"
+      >
         <input
-          name={`ing-name-${i}`}
+          name="ing-name-__INDEX__"
           type="text"
           maxlength="100"
           list="canonical-ingredients"
           placeholder="Ingredient"
-          aria-label={`Ingredient ${i + 1} name`}
-          value={row.name}
-          class={`col-span-2 ${rowInputClass}`}
+          aria-label="Ingredient __N__ name"
+          class="col-span-2 block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
         />
         <input
-          name={`ing-qty-${i}`}
+          name="ing-qty-__INDEX__"
           type="text"
           inputmode="decimal"
           placeholder="Qty"
-          aria-label={`Ingredient ${i + 1} quantity`}
-          value={row.qty}
-          class={rowInputClass}
+          aria-label="Ingredient __N__ quantity"
+          class="block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
         />
         <input
-          name={`ing-unit-${i}`}
+          name="ing-unit-__INDEX__"
           type="text"
           maxlength="20"
           placeholder="Unit"
-          aria-label={`Ingredient ${i + 1} unit`}
-          value={row.unit}
-          class={rowInputClass}
+          aria-label="Ingredient __N__ unit"
+          class="block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
         />
         <input
-          name={`ing-note-${i}`}
+          name="ing-note-__INDEX__"
           type="text"
           maxlength="200"
           placeholder="Note (optional)"
-          aria-label={`Ingredient ${i + 1} note`}
-          value={row.note}
-          class={`col-span-2 ${rowInputClass}`}
+          aria-label="Ingredient __N__ note"
+          class="col-span-2 block min-h-12 w-full rounded-xl border border-olive-950/10 bg-white px-3.5 py-2.5 text-base text-olive-950 placeholder:text-olive-500 focus:border-olive-600 focus:ring-2 focus:ring-olive-600/20 focus:outline-hidden sm:min-h-10 sm:text-sm dark:border-white/10 dark:bg-olive-950 dark:text-white dark:placeholder:text-olive-500"
         />
         <button
           type="button"
           data-remove-row
-          hidden
-          class="col-span-2 cursor-pointer justify-self-start border-0 bg-transparent p-0 font-sans text-[11px] uppercase tracking-[0.2em] text-muted"
+          class="col-span-2 inline-flex min-h-11 cursor-pointer items-center justify-self-start rounded-full px-3 py-1 text-sm/7 font-medium text-olive-700 transition hover:bg-olive-950/5 dark:text-olive-300 dark:hover:bg-white/5"
         >
           Remove
         </button>
       </div>
-    ))}
+    </template>
   </div>
-  <button
-    type="button"
-    data-add-row
-    hidden
-    class="mt-4 cursor-pointer border border-hairline bg-surface px-4 py-2 font-sans text-xs uppercase tracking-[0.2em] text-ink"
-  >
-    + Add ingredient
-  </button>
-  <template data-row-template>
-    <div data-ingredient-row class="mt-4 grid grid-cols-2 gap-4 border-t border-hairline pt-4">
-      <input
-        name="ing-name-__INDEX__"
-        type="text"
-        maxlength="100"
-        list="canonical-ingredients"
-        placeholder="Ingredient"
-        aria-label="Ingredient __N__ name"
-        class={`col-span-2 ${rowInputClass}`}
-      />
-      <input
-        name="ing-qty-__INDEX__"
-        type="text"
-        inputmode="decimal"
-        placeholder="Qty"
-        aria-label="Ingredient __N__ quantity"
-        class={rowInputClass}
-      />
-      <input
-        name="ing-unit-__INDEX__"
-        type="text"
-        maxlength="20"
-        placeholder="Unit"
-        aria-label="Ingredient __N__ unit"
-        class={rowInputClass}
-      />
-      <input
-        name="ing-note-__INDEX__"
-        type="text"
-        maxlength="200"
-        placeholder="Note (optional)"
-        aria-label="Ingredient __N__ note"
-        class={`col-span-2 ${rowInputClass}`}
-      />
-      <button
-        type="button"
-        data-remove-row
-        class="col-span-2 cursor-pointer justify-self-start border-0 bg-transparent p-0 font-sans text-[11px] uppercase tracking-[0.2em] text-muted"
-      >
-        Remove
-      </button>
+
+  <div class="mt-8">
+    <h2 class="block text-sm/7 font-medium text-olive-950 dark:text-white">Tags</h2>
+    <div class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+      {allTags.map((tag) => (
+        <CheckboxItem name="tags" value={tag.slug} label={tag.name} checked={checkedSlugs.has(tag.slug)} />
+      ))}
     </div>
-  </template>
-
-  <h2 class={`mt-8 ${labelClass}`}>Tags</h2>
-  <div class="mt-4 grid grid-cols-2 gap-2">
-    {allTags.map((tag) => (
-      <label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
-        <input type="checkbox" name="tags" value={tag.slug} checked={checkedSlugs.has(tag.slug)} />
-        {tag.name}
-      </label>
-    ))}
+    <p class="mt-2 text-xs text-olive-700 dark:text-olive-400">Unknown tags are skipped.</p>
   </div>
-  <p class="mt-2 text-xs text-muted">Unknown tags are skipped.</p>
 
-  <ImageField replace={imageReplace} />
-  {fieldErrors.image && <p id="image-error" class={errorClass}>{fieldErrors.image}</p>}
+  <Field
+    label={imageReplace ? 'Photo (optional — replaces the current photo)' : 'Photo (optional)'}
+    forId="image"
+    error={fieldErrors.image}
+    errorId="image-error"
+  >
+    <FileInput
+      id="image"
+      name="image"
+      accept="image/jpeg,image/png,image/webp"
+      describedby={fieldErrors.image ? 'image-error' : undefined}
+      extraAttrs={{ 'data-image-input': '' }}
+    />
+  </Field>
+  <script>
+    import './image-input.ts';
+  </script>
 
-  <div class="sticky bottom-0 -mx-6 mt-8 border-t border-hairline bg-bg px-6 py-3">
-    <button
-      type="submit"
-      class="w-full cursor-pointer border border-ink bg-ink py-3 font-sans text-xs uppercase tracking-[0.2em] text-bg hover:opacity-90"
-    >
-      {submitLabel}
-    </button>
-  </div>
+  <SubmitBar submitLabel={submitLabel} />
 </form>
 
 <script>

@@ -1,8 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
+import Container from '../components/ui/Container.astro';
+import Field from '../components/ui/Field.astro';
+import TextInput from '../components/ui/TextInput.astro';
+import FormAlert from '../components/ui/FormAlert.astro';
+import { u } from '../lib/base';
 
 if (Astro.locals.session) {
-  return Astro.redirect('/', 302);
+  return Astro.redirect(u('/'), 302);
 }
 
 const params = Astro.url.searchParams;
@@ -18,78 +23,79 @@ const errorMessage = error ? (ERRORS[error] ?? 'Something went wrong. Try again.
 ---
 
 <Base title="Sign in">
-  <main class="mx-auto flex min-h-dvh w-full max-w-[26rem] flex-col justify-center px-6">
-    <section class="border border-hairline bg-surface px-8 py-10">
-      <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">Recipes</p>
-      <h1 class="mt-3 text-2xl font-light tracking-tight">Sign in</h1>
+  <Container class="flex min-h-[70dvh] w-full max-w-md flex-col justify-center">
+    <section class="rounded-3xl border border-olive-950/10 bg-white/70 px-6 py-8 sm:px-8 sm:py-10 dark:border-white/10 dark:bg-white/5">
+      <div class="text-sm/7 font-semibold text-olive-700 dark:text-olive-400">Recipes</div>
+      <h1 class="mt-2 font-display text-4xl tracking-tight text-olive-950 dark:text-white">Sign in</h1>
 
       {
         errorMessage && (
-          <div class="mt-6 border-t border-hairline pt-6">
-            <p class="text-[10px] uppercase tracking-[0.28em] text-muted">Couldn&rsquo;t sign you in</p>
-            <p class="mt-2 text-sm text-ink">{errorMessage}</p>
+          <div class="mt-6">
+            <FormAlert title="Couldn't sign you in" message={errorMessage} />
           </div>
         )
       }
 
       {
         sent ? (
-          <div class="mt-6 border-t border-hairline pt-6">
-            <p class="text-[10px] uppercase tracking-[0.28em] text-accent">Check your email</p>
-            <p class="mt-2 text-sm text-ink">
+          <div class="mt-6 border-t border-olive-950/10 pt-6 dark:border-white/10">
+            <p class="text-sm/7 font-semibold text-olive-950 dark:text-white">Check your email</p>
+            <p class="mt-2 text-sm/7 text-olive-700 dark:text-olive-400">
               We sent a sign-in link. It expires in 15 minutes and works once.
             </p>
             <p class="mt-6 text-sm">
-              <a href="/login">Use a different email</a>
+              <a
+                href={u('/login')}
+                class="inline-flex min-h-11 items-center font-medium text-olive-950 underline decoration-olive-500/40 underline-offset-4 dark:text-white"
+              >
+                Use a different email
+              </a>
             </p>
           </div>
         ) : (
           <div class="mt-8">
-            <div class="flex gap-6 border-b border-hairline">
-              <span class="border-b border-ink pb-2 font-sans text-xs uppercase tracking-[0.2em] text-ink">
+            <div class="flex gap-6 border-b border-olive-950/10 dark:border-white/10">
+              <span class="border-b-2 border-olive-950 pb-2 text-sm/7 font-medium text-olive-950 dark:border-white dark:text-white">
                 Email
               </span>
               <span
-                class="cursor-not-allowed pb-2 font-sans text-xs uppercase tracking-[0.2em] text-muted"
+                class="cursor-not-allowed pb-2 text-sm/7 font-medium text-olive-700/60 dark:text-olive-400/60"
                 title="Phone sign-in is coming soon"
               >
                 Phone
-                <span class="ml-2 border border-hairline px-1 text-[9px] uppercase tracking-[0.2em]">
+                <span class="ml-2 rounded-full bg-olive-950/5 px-2 py-0.5 text-[10px] tracking-wider uppercase dark:bg-white/10">
                   soon
                 </span>
               </span>
             </div>
 
-            <form action="/auth/request" method="post" class="mt-6">
-              <label
-                for="email"
-                class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted"
-              >
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                maxlength="320"
-                autocomplete="email"
-                placeholder="you@example.com"
-                class="mt-2 w-full border-0 border-b border-hairline bg-transparent py-3 font-sans text-base text-ink outline-none placeholder:text-muted focus:border-accent"
-              />
-              <button
-                type="submit"
-                class="mt-8 w-full cursor-pointer border border-ink bg-ink py-3 font-sans text-xs uppercase tracking-[0.2em] text-bg hover:opacity-90"
-              >
-                Email me a sign-in link
-              </button>
+            <form action={u('/auth/request')} method="post" class="mt-6">
+              <Field label="Email address" forId="email" required>
+                <TextInput
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  maxlength={320}
+                  autocomplete="email"
+                  placeholder="you@example.com"
+                />
+              </Field>
+              <div class="mt-6">
+                <button
+                  type="submit"
+                  class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+                >
+                  Email me a sign-in link
+                </button>
+              </div>
             </form>
           </div>
         )
       }
     </section>
-    <p class="mt-6 text-center text-[10px] uppercase tracking-[0.28em] text-muted">
+    <p class="mt-6 text-center text-xs text-olive-700 dark:text-olive-400">
       Links expire in 15 minutes · Sessions last 30 days
     </p>
-  </main>
+  </Container>
 </Base>

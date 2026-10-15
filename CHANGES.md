@@ -3,10 +3,31 @@
 What is live. One entry per production deploy or schema change, newest first,
 in the same PR that changes production. Keep it terse: Change / Verify / Rollback.
 
-Verify uses: `production = https://recipes.benalloway.com`.
+Verify uses: `production = https://benalloway.com/recipes`
+(subdomain `https://recipes.benalloway.com` 301s to the same paths).
 Rollback for a bad worker deploy: `npx wrangler rollback` (immediately reverts to
 the previous version). Schema migrations are additive; record manual steps if one
 would ever need undoing.
+
+---
+
+## Unreleased — Oatmeal reskin + /recipes home (ADR-0003)
+
+Change: Reskinned to Oatmeal olive-instrument on `@benalloway/ui` v0.1.0
+(vendored into `src/components/ui/` + `src/styles/global.css` via
+`scripts/sync-ui.sh`, pinned in `scripts/ui-version.txt`); Catalyst-style
+form blocks rebuild `RecipeForm`/login (Field + inputs + sticky `SubmitBar`,
+same 422 re-render contract, same island `data-*` attributes); sticky olive
+navbar + full-screen olive mobile menu + dark-mode toggle; Astro
+`base: '/recipes'` with all links/redirects via `src/lib/base.ts` `u()`;
+Wrangler claims `benalloway.com/recipes*`; subdomain 301s to the apex path.
+No schema change; no auth/logic change.
+
+Verify: `npm run check` + `npm run build` green; `curl` 200s for
+`/recipes/`, `/recipes/login`, `/recipes/api/health` on the apex host;
+subdomain root 301s to the apex path.
+
+Rollback: `npx wrangler rollback` (visuals + routing only; no schema change).
 
 ---
 

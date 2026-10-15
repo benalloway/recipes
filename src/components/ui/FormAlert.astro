@@ -1,0 +1,13 @@
+---
+interface Props {
+  message: string;
+  title?: string;
+}
+
+const { message, title = 'Something needs attention' } = Astro.props;
+---
+
+<div role="alert" class="rounded-2xl border border-red-500/25 bg-red-500/5 p-4 sm:p-5 dark:bg-red-400/5">
+  <p class="text-sm/7 font-semibold text-red-800 dark:text-red-300">{title}</p>
+  <p class="mt-1 text-sm/7 text-red-800/90 dark:text-red-300/90">{message}</p>
+</div>

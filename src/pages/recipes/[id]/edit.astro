@@ -1,6 +1,9 @@
 ---
 import Base from '../../../layouts/Base.astro';
+import Container from '../../../components/ui/Container.astro';
+import PageHeader from '../../../components/ui/PageHeader.astro';
 import RecipeForm from '../../../components/RecipeForm.astro';
+import { u } from '../../../lib/base';
 import { getBlobs } from '../../../lib/adapters/blobs';
 import { getDb } from '../../../lib/adapters/db';
 import { readImageUpload, storeRecipeImage } from '../../../lib/images';
@@ -23,7 +26,7 @@ import {
 
 const session = Astro.locals.session;
 if (!session) {
-  return Astro.redirect('/login', 302);
+  return Astro.redirect(u('/login'), 302);
 }
 
 const db = getDb(Astro.locals);
@@ -42,7 +45,7 @@ if (Astro.request.method === 'POST') {
     form = await Astro.request.formData();
   } catch {
     // Unreadable body: nothing to re-render, keep the deep-linkable code.
-    return Astro.redirect(`/recipes/${rawId}/edit?error=unknown`, 303);
+    return Astro.redirect(u(`/recipes/${rawId}/edit?error=unknown`), 303);
   }
   const knownTagSlugs = new Set(
     (
@@ -60,7 +63,7 @@ if (Astro.request.method === 'POST') {
       if (upload) {
         await storeRecipeImage(db, getBlobs(Astro.locals), id, upload);
       }
-      return Astro.redirect(`/recipes/${rawId}`, 303);
+      return Astro.redirect(u(`/recipes/${rawId}`), 303);
     }
   } catch (err) {
     if (err instanceof RecipeValidationError) {
@@ -102,30 +105,40 @@ if (!failed && linkedError && values) {
 {
   !detail || !values ? (
     <Base title="Not found">
-      <main class="mx-auto max-w-xl px-6 py-16">
-        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">404 — Not found</p>
-        <h1 class="mt-4 text-2xl font-light tracking-tight">Not found</h1>
-        <p class="mt-2 text-ink">That recipe does not exist, was deleted, or belongs to someone else.</p>
-        <p class="mt-4">
-          <a href="/" class="text-xs uppercase tracking-[0.2em] text-accent">
-            ← Back to recipes
-          </a>
-        </p>
-      </main>
+      <Container class="mt-12 sm:mt-16">
+        <div class="mx-auto max-w-2xl">
+          <p class="mb-2 text-sm/7 font-semibold text-olive-700 dark:text-olive-400">404 — Not found</p>
+          <PageHeader
+            title="Not found"
+            intro="That recipe does not exist, was deleted, or belongs to someone else."
+          />
+          <p class="mt-6">
+            <a
+              href={u('/')}
+              class="inline-flex min-h-11 items-center rounded-full bg-olive-950/10 px-4 py-2 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+            >
+              ← Back to recipes
+            </a>
+          </p>
+        </div>
+      </Container>
     </Base>
   ) : (
     <Base title={`Edit ${detail.title}`}>
-      <main class="mx-auto max-w-xl px-6 py-16">
-        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-          <a href={`/recipes/${detail.id}`} class="text-accent">
-            ← Back to recipe
-          </a>
-        </p>
-        <h1 class="mt-4 text-2xl font-light tracking-tight">Edit recipe</h1>
-        <p class="mt-2 font-hand text-lg text-muted">What changed? Future-you will thank you.</p>
+      <Container class="mt-12 sm:mt-16">
+        <div class="mx-auto max-w-2xl">
+          <p class="mb-2 text-sm/7 font-semibold text-olive-700 dark:text-olive-400">
+            <a href={u(`/recipes/${detail.id}`)} class="transition hover:opacity-60">
+              ← Back to recipe
+            </a>
+          </p>
+          <PageHeader
+            title="Edit recipe"
+            intro="What changed? Future-you will thank you."
+          />
 
-        <RecipeForm
-          action={`/recipes/${detail.id}/edit`}
+          <RecipeForm
+            action={u(`/recipes/${detail.id}/edit`)}
           submitLabel="Save changes"
           values={values}
           fieldErrors={fieldErrors}
@@ -134,7 +147,8 @@ if (!failed && linkedError && values) {
           canonicalIngredients={canonicalIngredients}
           imageReplace={true}
         />
-      </main>
+        </div>
+      </Container>
     </Base>
   )
 }

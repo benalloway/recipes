@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { u } from '../../../lib/base';
 import { getDb } from '../../../lib/adapters/db';
 import { recipeNotFoundPage } from '../../../lib/not-found';
 import { softDelete } from '../../../lib/recipes';
@@ -12,7 +13,7 @@ import { softDelete } from '../../../lib/recipes';
 export const POST: APIRoute = async (context) => {
   const session = context.locals.session;
   if (!session) {
-    return context.redirect('/login', 302);
+    return context.redirect(u('/login'), 302);
   }
   const id = Number(context.params.id);
   const db = getDb(context.locals);
@@ -23,5 +24,5 @@ export const POST: APIRoute = async (context) => {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
-  return context.redirect('/', 303);
+  return context.redirect(u('/'), 303);
 };

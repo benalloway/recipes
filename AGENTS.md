@@ -34,13 +34,13 @@ context after. 1:1 with `mattpocock/skills` + `mattpocock/sandcastle`
   account IDs or session keys.
 - Migrations are plain-SQLite SQL in `migrations/` (portable, no D1-only
   syntax). Ingredients are relational rows; steps/security prose stays JSON.
-- Design system is fixed: Tailwind CSS v4 (CSS-first config) with tokens
-  in `@theme` in `src/styles/global.css` (bone white, hairlines, single
-  accent) generating utilities (`bg-bg`, `text-ink`, `border-hairline`,
-  `text-accent`, ...). Style with those utilities; keep base element styles
-  in `@layer base`. Do not introduce new colors, fonts, shadows, or animation
-  beyond the tokens. Preflight is intentionally off (see `global.css` header)
-  — do not enable it without an explicit design decision.
+- Design system is fixed: Oatmeal olive-instrument on `@benalloway/ui`
+  (vendored `src/components/ui/` + `src/styles/global.css`, pinned in
+  `scripts/ui-version.txt`; bump via `scripts/sync-ui.sh`, never hand-edit
+  vendored files). App shells compose the vendored atoms. Served under
+  Astro `base: '/recipes'` — every app-absolute URL goes through
+  `src/lib/base.ts` `u()`. Do not introduce new colors, fonts, or shadows
+  without a new ADR.
 
 ## Commands
 

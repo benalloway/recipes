@@ -1,7 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Container from '../../components/ui/Container.astro';
+import PageHeader from '../../components/ui/PageHeader.astro';
 import EmptyState from '../../components/EmptyState.astro';
 import RecipeGrid from '../../components/RecipeGrid.astro';
+import { u } from '../../lib/base';
 import { getDb } from '../../lib/adapters/db';
 import { getTagBySlug, listByTag } from '../../lib/recipes';
 
@@ -18,42 +21,52 @@ if (cards === null) {
 {
   cards === null ? (
     <Base title="Not found">
-      <main class="mx-auto max-w-xl px-6 py-16">
-        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">404 — Not found</p>
-        <h1 class="mt-4 text-2xl font-light tracking-tight">Not found</h1>
-        <p class="mt-2 text-ink">No such tag.</p>
-        <p class="mt-4">
-          <a href="/" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
+      <Container class="mt-12 sm:mt-16">
+        <p class="mb-2 text-sm/7 font-semibold text-olive-700 dark:text-olive-400">404 — Not found</p>
+        <PageHeader title="Not found" intro="No such tag." />
+        <p class="mt-6">
+          <a
+            href={u('/')}
+            class="inline-flex min-h-11 items-center rounded-full bg-olive-950/10 px-4 py-2 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+          >
             ← Back to recipes
           </a>
         </p>
-      </main>
+      </Container>
     </Base>
   ) : (
     <Base title={tag?.name ?? 'Tag'}>
-      <main class="mx-auto max-w-4xl px-6 py-20">
-        <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
-          <a href="/" class="text-accent">
+      <Container class="mt-12 sm:mt-16">
+        <p class="mb-2 text-sm/7 font-semibold text-olive-700 dark:text-olive-400">
+          <a href={u('/')} class="transition hover:opacity-60">
             ← Recipes
           </a>
         </p>
-        <h1 class="mt-4 text-2xl font-light tracking-tight">{tag?.name}</h1>
+        <PageHeader title={tag?.name ?? 'Tag'} />
         {cards.length > 0 ? (
           <RecipeGrid cards={cards} />
         ) : (
           <EmptyState>
-            <p class="font-hand text-lg text-ink">Nothing shelved under this tag yet.</p>
-            <p class="mt-4 flex gap-6">
-              <a href="/" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
+            <p class="font-display text-2xl text-olive-950 dark:text-white">
+              Nothing shelved under this tag yet.
+            </p>
+            <p class="mt-4 flex flex-wrap gap-3">
+              <a
+                href={u('/')}
+                class="inline-flex min-h-11 items-center rounded-full bg-olive-950/10 px-4 py-2 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+              >
                 Browse recipes →
               </a>
-              <a href="/recipes/new" class="font-sans text-xs uppercase tracking-[0.2em] text-accent">
+              <a
+                href={u('/recipes/new')}
+                class="inline-flex min-h-11 items-center rounded-full bg-olive-950/10 px-4 py-2 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+              >
                 Add a recipe →
               </a>
             </p>
           </EmptyState>
         )}
-      </main>
+      </Container>
     </Base>
   )
 }

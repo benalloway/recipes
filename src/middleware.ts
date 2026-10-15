@@ -1,8 +1,10 @@
 import { defineMiddleware } from 'astro:middleware';
+import { BASE, u } from './lib/base';
 import { getDb } from './lib/adapters/db';
 import { SESSION_COOKIE, loadSessionByToken } from './lib/auth';
 
-// `/` is public (logged-out landing with login CTA); all other pages gate to /login.
+// The app root is public (logged-out landing with login CTA); all other
+// pages gate to login. Paths are matched with the deploy base stripped.
 const OPEN_PATHS = new Set(['/', '/login', '/api/health', '/favicon.ico', '/robots.txt']);
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -14,13 +16,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   const { pathname } = context.url;
-  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  const stripped =
+    BASE && pathname.startsWith(BASE)
+      ? pathname.slice(BASE.length) || '/'
+      : pathname;
+  const normalized = stripped.length > 1 ? stripped.replace(/\/+$/, '') : stripped;
   const open =
     OPEN_PATHS.has(normalized) ||
-    pathname.startsWith('/auth/') ||
-    pathname.startsWith('/_astro/');
+    stripped.startsWith('/auth/') ||
+    stripped.startsWith('/_astro/');
   if (!open && !context.locals.session) {
-    return context.redirect('/login', 302);
+    return context.redirect(u('/login'), 302);
   }
   return next();
 });

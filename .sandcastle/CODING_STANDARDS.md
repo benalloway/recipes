@@ -3,26 +3,19 @@
 <!-- The reviewer agent loads this during code review via @.sandcastle/CODING_STANDARDS.md
      so these standards are enforced during review without costing tokens during implementation. -->
 
-## Style (Cardstock — see docs/adr/0002-cardstock-design-language.md)
+## Style (Oatmeal on @benalloway/ui — see docs/adr/0003-oatmeal-ui-shared-recipes-path.md)
 
 - Astro 7 SSR + `@astrojs/cloudflare`. Zero client framework — interactive bits
   are plain TS islands, everything else server-rendered HTML.
-- Tailwind CSS v4 (CSS-first config) with tokens in `@theme` in
-  `src/styles/global.css`: paper `#FAF7F0` (page), card `#FFFDF8` (surfaces),
-  rule `#E5DCC9` (hairlines, warmed), ink `#201A15`, muted `#8A7F72`,
-  accent paprika `#B4432A` (links/focus/active only). Style with utilities
-  (`bg-bg`, `bg-surface`, `border-hairline`, `text-ink`, `text-muted`,
-  `text-accent`, ...). Sharp corners only (≤2px radius). Do not introduce new
-  colors, fonts, shadows, or animation beyond the tokens without a new ADR.
-  Preflight is intentionally off — do not enable it without an explicit
-  design decision.
-- Type: grotesk micro-labels for structure (existing Helvetica stack, 10px
-  letterspaced uppercase); a serif with character for recipe titles; one
-  handwriting face for marginalia only (edit notes, personal asides — never
-  body copy or labels).
-- Plates, not heroes: user photos get a warm duotone/tint overlay at low
-  opacity inside restrained frames with fixed aspect ratios — never unbounded
-  `w-full` heights, never hero banners. Meaningful `alt` (recipe title);
+- Tailwind CSS v4 with Oatmeal olive-instrument tokens (vendored
+  `src/styles/global.css` from `@benalloway/ui`, pinned in
+  `scripts/ui-version.txt`; re-vendor via `scripts/sync-ui.sh`, never
+  hand-edit vendored files). Preflight is ON. Do not introduce new colors,
+  fonts, or shadows without a new ADR.
+- Type: Instrument Serif display for headings/titles, Inter for UI/body.
+- Plates: user photos in restrained rounded frames with fixed aspect ratios —
+  never unbounded `w-full` heights, never hero banners. Meaningful `alt`
+  (recipe title);
   decorative thumbs `alt=""`.
 - Shell: global nav lives in `Base` (Recipes / Favorites / New). Every
   surface links its entry points (edit link on detail, login CTA when

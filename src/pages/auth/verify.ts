@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { u } from '../../lib/base';
 import { getDb } from '../../lib/adapters/db';
 import {
   SESSION_COOKIE,
@@ -14,16 +15,16 @@ export const GET: APIRoute = async (context) => {
 
   const userId = await consumeMagicToken(db, token);
   if (userId === null) {
-    return context.redirect('/login?error=link', 303);
+    return context.redirect(u('/login?error=link'), 303);
   }
 
   const session = await createSession(db, userId);
   context.cookies.set(SESSION_COOKIE, session.token, {
-    path: '/',
+    path: u('/'),
     httpOnly: true,
     secure: context.url.protocol === 'https:',
     sameSite: 'lax',
     maxAge: SESSION_TTL_SECONDS,
   });
-  return context.redirect('/', 303);
+  return context.redirect(u('/'), 303);
 };

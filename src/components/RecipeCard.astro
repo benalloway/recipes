@@ -1,5 +1,6 @@
 ---
 import type { RecipeCard as Card } from '../lib/recipes';
+import { u } from '../lib/base';
 import Plate from './Plate.astro';
 import TagChip from './TagChip.astro';
 
@@ -10,36 +11,42 @@ interface Props {
 const { card } = Astro.props;
 ---
 
-<article class="border border-hairline bg-surface p-6">
-  <a href={`/recipes/${card.id}`} class="font-serif text-xl tracking-tight text-ink">
-    {card.title}
-  </a>
+<article class="group relative flex flex-col overflow-hidden rounded-2xl border border-olive-950/10 bg-white p-5 shadow-xs transition hover:border-olive-950/20 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20">
+  <h2 class="font-display text-2xl tracking-tight text-olive-950 transition group-hover:opacity-60 dark:text-white">
+    <a href={u(`/recipes/${card.id}`)} class="focus:outline-hidden">
+      <span class="absolute inset-0 z-10" aria-hidden="true"></span>
+      {card.title}
+    </a>
+  </h2>
   {
     card.imageKey ? (
       <div class="mt-4">
-        <Plate src={`/media/${card.imageKey}`} alt={card.title} />
+        <Plate src={u(`/media/${card.imageKey}`)} alt={card.title} />
       </div>
     ) : (
-      <div class="mt-4 h-32 bg-bg" aria-hidden="true" />
+      <div class="mt-4 h-32 rounded-xl bg-olive-950/5 dark:bg-white/5" aria-hidden="true" />
     )
   }
   {
     card.tags.length > 0 && (
-      <p class="mt-4 flex flex-wrap gap-x-4 gap-y-1">
+      <p class="relative z-10 mt-4 flex flex-wrap gap-1.5">
         {card.tags.map((tag) => (
           <TagChip name={tag.name} slug={tag.slug} />
         ))}
       </p>
     )
   }
-  <form method="post" action={`/recipes/${card.id}/favorite`} class="mt-4">
+  <form method="post" action={u(`/recipes/${card.id}/favorite`)} class="relative z-10 mt-4">
     <button
       type="submit"
       aria-pressed={card.isFavorite ? 'true' : 'false'}
       aria-label={card.isFavorite ? 'Remove from favorites' : 'Save to favorites'}
-      class="cursor-pointer border-0 bg-transparent p-0 font-sans text-base text-accent"
+      class="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full bg-olive-950/5 px-3.5 py-1 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
     >
-      {card.isFavorite ? '★' : '☆'}
+      <span aria-hidden="true" class={card.isFavorite ? 'text-amber-500' : ''}>
+        {card.isFavorite ? '★' : '☆'}
+      </span>
+      {card.isFavorite ? 'Saved' : 'Save'}
     </button>
   </form>
 </article>

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { u } from '../../../lib/base';
 import { getDb } from '../../../lib/adapters/db';
 import { recipeNotFoundPage } from '../../../lib/not-found';
 import { toggleFavorite } from '../../../lib/recipes';
@@ -12,7 +13,7 @@ import { toggleFavorite } from '../../../lib/recipes';
 export const POST: APIRoute = async (context) => {
   const session = context.locals.session;
   if (!session) {
-    return context.redirect('/login', 302);
+    return context.redirect(u('/login'), 302);
   }
   const id = Number(context.params.id);
   const db = getDb(context.locals);
@@ -25,7 +26,7 @@ export const POST: APIRoute = async (context) => {
   }
 
   const referer = context.request.headers.get('referer');
-  let target = `/recipes/${id}`;
+  let target = u(`/recipes/${id}`);
   if (referer) {
     try {
       const url = new URL(referer);
