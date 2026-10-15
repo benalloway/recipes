@@ -39,7 +39,6 @@ jobs:
       max_iterations: ${{ inputs.max_iterations || '5' }}
       delivery: ${{ inputs.delivery || 'pr' }}
       # delivery: ${{ inputs.delivery || 'push' }}  # ONLY for repos with green CI + branch protection
-      # label: Sandcastle        # uncomment while migrating from Sandcastle
       # base_branch: master      # uncomment if your trunk is not `main`
       # verify_command: "make verify"
       # setup_command: "go mod download"
