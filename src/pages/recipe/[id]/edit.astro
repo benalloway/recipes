@@ -45,7 +45,7 @@ if (Astro.request.method === 'POST') {
     form = await Astro.request.formData();
   } catch {
     // Unreadable body: nothing to re-render, keep the deep-linkable code.
-    return Astro.redirect(u(`/recipes/${rawId}/edit?error=unknown`), 303);
+    return Astro.redirect(u(`/recipe/${rawId}/edit?error=unknown`), 303);
   }
   const knownTagSlugs = new Set(
     (
@@ -63,7 +63,7 @@ if (Astro.request.method === 'POST') {
       if (upload) {
         await storeRecipeImage(db, getBlobs(Astro.locals), id, upload);
       }
-      return Astro.redirect(u(`/recipes/${rawId}`), 303);
+      return Astro.redirect(u(`/recipe/${rawId}`), 303);
     }
   } catch (err) {
     if (err instanceof RecipeValidationError) {
@@ -128,7 +128,7 @@ if (!failed && linkedError && values) {
       <Container class="mt-12 sm:mt-16">
         <div class="mx-auto max-w-2xl">
           <p class="mb-2 text-sm/7 font-semibold text-olive-700 dark:text-olive-400">
-            <a href={u(`/recipes/${detail.id}`)} class="transition hover:opacity-60">
+            <a href={u(`/recipe/${detail.id}`)} class="transition hover:opacity-60">
               ← Back to recipe
             </a>
           </p>
@@ -138,7 +138,7 @@ if (!failed && linkedError && values) {
           />
 
           <RecipeForm
-            action={u(`/recipes/${detail.id}/edit`)}
+            action={u(`/recipe/${detail.id}/edit`)}
           submitLabel="Save changes"
           values={values}
           fieldErrors={fieldErrors}

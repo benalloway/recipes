@@ -13,7 +13,7 @@ const pathname = Astro.url.pathname;
 const navItems = [
   { href: u('/'), label: 'Recipes' },
   { href: u('/favorites'), label: 'Favorites' },
-  { href: u('/recipes/new'), label: 'New' },
+  { href: u('/recipe/new'), label: 'New' },
 ];
 
 function isActive(href: string, currentPath: string) {

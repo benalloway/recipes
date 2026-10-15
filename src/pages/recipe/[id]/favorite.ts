@@ -26,7 +26,7 @@ export const POST: APIRoute = async (context) => {
   }
 
   const referer = context.request.headers.get('referer');
-  let target = u(`/recipes/${id}`);
+  let target = u(`/recipe/${id}`);
   if (referer) {
     try {
       const url = new URL(referer);

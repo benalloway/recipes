@@ -79,9 +79,9 @@ purely in tags. Free-form `unit` TEXT already accommodates drinks vocabulary
 
 - `/login` (Email / Phone tabs; phone disabled "soon")
 - `/` dashboard grid (image, title, tags, favorite ★)
-- `/recipes/[id]` (schema.org JSON-LD, scaler island)
-- `/recipes/new`, `/recipes/[id]/edit` (ingredient autocomplete island)
-- `/recipes/[id]/history` (version timeline + revert)
+- `/recipe/[id]` (schema.org JSON-LD, scaler island)
+- `/recipe/new`, `/recipe/[id]/edit` (ingredient autocomplete island)
+- `/recipe/[id]/history` (version timeline + revert)
 - `/favorites`, `/tags/[slug]`
 - `/media/*` → R2 (portability: swap to S3 = one file)
 

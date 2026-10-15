@@ -44,7 +44,7 @@ const jsonLd = detail
           </h1>
           <p class="mt-4 flex flex-wrap items-center gap-3 text-sm/7 text-olive-700 dark:text-olive-400">
             <a
-              href={u(`/recipes/${detail.id}/edit`)}
+              href={u(`/recipe/${detail.id}/edit`)}
               class="inline-flex min-h-11 items-center font-medium text-olive-950 underline decoration-olive-500/40 underline-offset-4 transition hover:opacity-60 dark:text-white"
             >
               Edit recipe
@@ -78,7 +78,7 @@ const jsonLd = detail
             </p>
           )}
           <div class="mt-8 flex flex-wrap gap-3">
-            <form method="post" action={u(`/recipes/${detail.id}/favorite`)} class="m-0">
+            <form method="post" action={u(`/recipe/${detail.id}/favorite`)} class="m-0">
               <button
                 type="submit"
                 aria-pressed={detail.isFavorite ? 'true' : 'false'}
@@ -91,7 +91,7 @@ const jsonLd = detail
             </form>
             <form
               method="post"
-              action={u(`/recipes/${detail.id}/delete`)}
+              action={u(`/recipe/${detail.id}/delete`)}
               data-confirm={`Delete “${detail.title}”? This hides the recipe everywhere; history is kept.`}
               class="m-0"
             >

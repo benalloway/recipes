@@ -42,7 +42,7 @@ if (Astro.request.method === 'POST') {
     form = await Astro.request.formData();
   } catch {
     // Unreadable body: nothing to re-render, keep the deep-linkable code.
-    return Astro.redirect(u('/recipes/new?error=unknown'), 303);
+    return Astro.redirect(u('/recipe/new?error=unknown'), 303);
   }
   const knownTagSlugs = new Set(
     (
@@ -56,7 +56,7 @@ if (Astro.request.method === 'POST') {
     if (upload) {
       await storeRecipeImage(db, getBlobs(Astro.locals), id, upload);
     }
-    return Astro.redirect(u(`/recipes/${id}`), 303);
+    return Astro.redirect(u(`/recipe/${id}`), 303);
   } catch (err) {
     if (err instanceof RecipeValidationError) {
       // Re-render with everything typed intact + an inline error (422).
@@ -97,7 +97,7 @@ const allTags =
       />
 
       <RecipeForm
-        action={u('/recipes/new')}
+        action={u('/recipe/new')}
       submitLabel="Save recipe"
       values={values}
       fieldErrors={fieldErrors}

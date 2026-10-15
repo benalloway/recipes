@@ -20,6 +20,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
     BASE && pathname.startsWith(BASE)
       ? pathname.slice(BASE.length) || '/'
       : pathname;
+
+  // Compat for pre-rename nested URLs (/recipes/* under the /recipes base):
+  // Astro strips `base` twice when the stripped remainder itself starts
+  // with the base segment, so resource routes live at singular /recipe/*.
+  // 308 preserves the method for any stale form posts. Runs before the
+  // auth gate so old bookmarks canonicalize first.
+  if (stripped === '/recipes/new' || /^\/recipes\/[^/]+(\/(edit|favorite|delete))?$/.test(stripped)) {
+    return context.redirect(u(`/recipe${stripped.slice('/recipes'.length)}`), 308);
+  }
   const normalized = stripped.length > 1 ? stripped.replace(/\/+$/, '') : stripped;
   const open =
     OPEN_PATHS.has(normalized) ||

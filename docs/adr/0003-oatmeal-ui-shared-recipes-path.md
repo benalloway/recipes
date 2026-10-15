@@ -30,9 +30,14 @@ of only `recipes.benalloway.com`.
   subdomain custom domain during transition. Canonical home is
   `benalloway.com/recipes/*`; `recipes.benalloway.com/*` 301s there via a
   zone redirect rule.
-- **Accepted trade-off:** detail URLs read `/recipes/recipes/:id` under the
-  base. Renaming the resource is deferred — zero route renames keeps the
-  redirect mapping trivial.
+- **No resource route may start with the base segment.** Astro 7 strips
+  `base` twice at runtime when the stripped remainder itself starts with
+  the base (`/recipes/recipes/new` → `/recipes/new` → `/new` → 404 in
+  production builds; dev unaffected). Resource routes therefore live at
+  singular `/recipe/*` (`/recipe/new`, `/recipe/[id]`, `/recipe/[id]/edit`,
+  `/recipe/[id]/favorite`, `/recipe/[id]/delete`), and `astro.config`
+  `redirects` map the old nested paths forward so pre-rename bookmarks keep
+  working through the path-preserving subdomain→apex 301.
 
 ## Consequences
 
