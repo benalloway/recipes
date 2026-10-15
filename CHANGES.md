@@ -3,11 +3,37 @@
 What is live. One entry per production deploy or schema change, newest first,
 in the same PR that changes production. Keep it terse: Change / Verify / Rollback.
 
-Verify uses: `production = https://benalloway.com/recipes`
-(subdomain `https://recipes.benalloway.com` 301s to the same paths).
-Rollback for a bad worker deploy: `npx wrangler rollback` (immediately reverts to
+Verify uses: `production = https://recipes.benalloway.com`
+(apex `https://benalloway.com/recipes*` 301s to the subdomain root via the
+zone redirect rule). Rollback for a bad worker deploy: `npx wrangler rollback` (immediately reverts to
 the previous version). Schema migrations are additive; record manual steps if one
 would ever need undoing.
+
+---
+
+## Unreleased — Standalone subdomain app + Catalyst compact shell (issue #48)
+
+Change: Recipes is now a standalone app served at its root on
+`recipes.benalloway.com` (ADR-0004): Astro `base` removed, `u()` is the
+identity function (module + call sites kept), Wrangler keeps only the
+subdomain custom domain (apex `/recipes*` 301s to the subdomain via the
+human-owned zone rule), bare-`/recipes` 308 canonicalizer removed
+(pre-rename `/recipes/*` → `/recipe/*` compat 308s kept), session cookie
+now host-local `Path=/`. Shell redesigned from the editorial marketing
+header into a compact app topbar (`h-14`, bottom border, app mark +
+`Shelf`/`Favorites` pill tabs + primary `+ New Recipe` + email pill /
+`Sign in` + theme toggle, mobile `<dialog>` menu kept) with a minimal
+footer linking back to `benalloway.com ↗`; dashboard moves to a compact
+toolbar row (title + count badge + `+ New Recipe`).
+
+Verify: `npm run check` + `npm run build` green; `npm run preview`
+smoke — `/` 200 logged-out landing with login CTA, `/login` 200,
+`/favorites` + `/recipe/new` 302 when logged out, `/api/health` 200;
+sign-in flow sets a `Path=/` cookie; no `/recipes`-prefixed app routes
+remain (only the intentional pre-rename `/recipes/*` → `/recipe/*`
+compat 308s in `src/middleware.ts`).
+
+Rollback: `npx wrangler rollback` (routing + shell only; no schema change).
 
 ---
 

@@ -19,8 +19,9 @@ export const GET: APIRoute = async (context) => {
   }
 
   const session = await createSession(db, userId);
+  // Host-local cookie: one `Path=/` cookie covers the whole subdomain app.
   context.cookies.set(SESSION_COOKIE, session.token, {
-    path: u('/'),
+    path: '/',
     httpOnly: true,
     secure: context.url.protocol === 'https:',
     sameSite: 'lax',

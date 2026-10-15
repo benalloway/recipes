@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Container from '../components/ui/Container.astro';
-import PageHeader from '../components/ui/PageHeader.astro';
+import Badge from '../components/ui/Badge.astro';
 import EmptyState from '../components/EmptyState.astro';
 import RecipeGrid from '../components/RecipeGrid.astro';
 import { u } from '../lib/base';
@@ -12,51 +12,72 @@ const session = Astro.locals.session;
 const cards = session ? await getDashboard(getDb(Astro.locals), session.userId) : [];
 const hasCards = cards.length > 0;
 const showEmptyShelf = !!session && !hasCards;
+const recipeCountText = `${cards.length} ${cards.length === 1 ? 'recipe' : 'recipes'}`;
 ---
 
 <Base title="Home">
-  <Container class="mt-12 sm:mt-16">
-    {
-      session && (
-        <div class="mb-2 text-sm/7 font-semibold text-olive-700 dark:text-olive-400">
-          Signed in as {session.email}
-        </div>
-      )
-    }
-    <PageHeader
-      title="Recipes"
-      intro={session ? 'Your shelf — newest first. Tap the star to keep favorites close.' : 'Sign in to see your shelf.'}
-    />
-    {session && hasCards && <RecipeGrid cards={cards} />}
-    {!session && (
-      <EmptyState>
-        <p class="font-display text-2xl text-olive-950 dark:text-white">
-          Your recipes live here once you sign in.
-        </p>
-        <p class="mt-4">
-          <a
-            href={u('/login')}
-            class="inline-flex min-h-11 items-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
-          >
-            Sign in to get started →
-          </a>
-        </p>
-      </EmptyState>
-    )}
-    {showEmptyShelf && (
-      <EmptyState>
-        <p class="font-display text-2xl text-olive-950 dark:text-white">
-          No recipes yet — your shelf is ready when you are.
-        </p>
-        <p class="mt-4">
+  <Container class="mt-8 sm:mt-10">
+    <div class="flex items-center gap-3">
+      <h1 class="font-display text-3xl tracking-tight text-olive-950 dark:text-white">
+        Shelf
+      </h1>
+      {
+        session && (
+          <Badge color="soft">
+            {recipeCountText}
+          </Badge>
+        )
+      }
+      {
+        session && (
           <a
             href={u('/recipe/new')}
-            class="inline-flex min-h-11 items-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+            class="ml-auto inline-flex min-h-9 items-center rounded-full bg-olive-950 px-3.5 py-1.5 text-sm/6 font-medium whitespace-nowrap text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
           >
-            Add your first recipe →
+            <span aria-hidden="true" class="mr-1">+</span> New Recipe
           </a>
-        </p>
-      </EmptyState>
-    )}
+        )
+      }
+    </div>
+    <p class="mt-2 text-sm/6 text-olive-950/70 dark:text-white/70">
+      {
+        session
+          ? 'Newest first. Tap the star to keep favorites close.'
+          : 'Sign in to see your shelf.'
+      }
+    </p>
+    <div class="mt-6">
+      {session && hasCards && <RecipeGrid cards={cards} />}
+      {!session && (
+        <EmptyState>
+          <p class="font-display text-2xl text-olive-950 dark:text-white">
+            Your recipes live here once you sign in.
+          </p>
+          <p class="mt-4">
+            <a
+              href={u('/login')}
+              class="inline-flex min-h-11 items-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+            >
+              Sign in to get started →
+            </a>
+          </p>
+        </EmptyState>
+      )}
+      {showEmptyShelf && (
+        <EmptyState>
+          <p class="font-display text-2xl text-olive-950 dark:text-white">
+            No recipes yet — your shelf is ready when you are.
+          </p>
+          <p class="mt-4">
+            <a
+              href={u('/recipe/new')}
+              class="inline-flex min-h-11 items-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+            >
+              Add your first recipe →
+            </a>
+          </p>
+        </EmptyState>
+      )}
+    </div>
   </Container>
 </Base>

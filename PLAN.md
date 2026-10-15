@@ -87,8 +87,9 @@ purely in tags. Free-form `unit` TEXT already accommodates drinks vocabulary
 
 ## Design system (Oatmeal olive-instrument on @benalloway/ui)
 
-Superseded by ADR-0003 (Oatmeal reskin, shared UI, `/recipes` home). Current
-state, implemented with Tailwind CSS v4 (`@tailwindcss/vite`, preflight on):
+Superseded by ADR-0003 (Oatmeal reskin, shared UI) then ADR-0004
+(standalone subdomain root). Current state, implemented with Tailwind CSS v4
+(`@tailwindcss/vite`, preflight on):
 
 - Olive tokens `--color-olive-50…950` in `@theme` (vendored
   `src/styles/global.css` from `@benalloway/ui`); Instrument Serif display +
@@ -97,7 +98,8 @@ state, implemented with Tailwind CSS v4 (`@tailwindcss/vite`, preflight on):
   `scripts/ui-version.txt`, sync via `scripts/sync-ui.sh`); app shells
   (nav, cards, forms, islands) compose them in this repo
 - Catalyst-style form blocks, MD3 `min-h-11`/`min-h-12` targets, dark mode
-- Served under Astro `base: '/recipes'`; all URLs via `src/lib/base.ts` `u()`
+- Served at the subdomain root on `recipes.benalloway.com` (no Astro
+  `base`); all URLs via `src/lib/base.ts` `u()` (identity)
 
 ## Milestones
 

@@ -5,9 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   output: 'server',
-  // Canonical home is benalloway.com/recipes/* (subdomain 301s there).
-  // All links/redirects go through src/lib/base.ts `u()`.
-  base: '/recipes',
+  // Standalone app served at its root on recipes.benalloway.com (no base).
+  // All links/redirects go through src/lib/base.ts `u()` (identity).
   adapter: cloudflare({
     imageService: 'passthrough',
   }),

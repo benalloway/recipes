@@ -37,10 +37,11 @@ context after. 1:1 with `mattpocock/skills` + `mattpocock/sandcastle`
 - Design system is fixed: Oatmeal olive-instrument on `@benalloway/ui`
   (vendored `src/components/ui/` + `src/styles/global.css`, pinned in
   `scripts/ui-version.txt`; bump via `scripts/sync-ui.sh`, never hand-edit
-  vendored files). App shells compose the vendored atoms. Served under
-  Astro `base: '/recipes'` — every app-absolute URL goes through
-  `src/lib/base.ts` `u()`. Do not introduce new colors, fonts, or shadows
-  without a new ADR.
+  vendored files). App shells compose the vendored atoms. Do not introduce
+  new colors, fonts, or shadows without a new ADR.
+- Served at the subdomain root on `recipes.benalloway.com` (no Astro
+  `base`) — every app-absolute URL goes through `src/lib/base.ts` `u()`
+  (identity).
 
 ## Commands
 
