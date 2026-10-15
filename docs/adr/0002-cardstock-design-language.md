@@ -45,7 +45,7 @@ rules, ink), never decoration.
 
 ## Consequences
 
-- `.sandcastle/CODING_STANDARDS.md` enforces this ADR at review time.
+- `.sandcastle/CODING_STANDARDS.md` enforces this ADR at review time (Forge reviewer standards file).
 - Form POST handlers change shape (re-render vs redirect) — slices 2's
   ticket carries the migration per page.
 - M4 (history) / M5 (scaler) stay paused, then build natively in Cardstock.

@@ -44,12 +44,12 @@ reimplementing those files only — nothing else imports platform modules.
 ## Process (how work gets done here)
 
 - **Humans:** [CONTRIBUTING.md](./CONTRIBUTING.md) — idea → issue
-  (`needs-triage` + `Sandcastle`) → `/triage` → `npm run sandcastle` → push → auto-deploy.
+  (`needs-triage` + `Forge`) → `/triage` → `npm run forge` → push → auto-deploy.
 - **Agents:** [AGENTS.md](./AGENTS.md) — stack invariants, commands, and the
-  local Sandcastle factory (planner → implementers → reviewers → merger).
-  Skill/vocabulary config: [`docs/agents/`](./docs/agents/),
+  Forge factory (planner → implementers → reviewers → merger, local or
+  GitHub Actions). Skill/vocabulary config: [`docs/agents/`](./docs/agents/),
   [`GLOSSARY.md`](./GLOSSARY.md), [`docs/adr/`](./docs/adr/).
-  Factory: [`.sandcastle/`](./.sandcastle/). CI only:
+  Factory: [`.forge/`](./.forge) (vendored — never hand-edit). CI + factory:
   [.github/workflows/README.md](./.github/workflows/README.md).
 - **Replicate this setup** in a new repo: [docs/bootstrap.md](./docs/bootstrap.md)
-  + [`scripts/setup-labels.sh`](./scripts/setup-labels.sh).
+  + Forge [`docs/INSTALL.md`](https://github.com/benalloway/forge/blob/v1/docs/INSTALL.md).

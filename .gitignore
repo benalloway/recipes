@@ -7,5 +7,3 @@ dist/
 *.sqlite-journal
 .DS_Store
 .sandcastle/.env
-.sandcastle/worktrees/
-.sandcastle/logs/

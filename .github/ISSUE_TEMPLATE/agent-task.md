@@ -1,6 +1,6 @@
 ---
 name: Agent task
-about: Tracer-bullet slice for Sandcastle (one issue per branch, merged by the factory)
+about: Tracer-bullet slice for Forge (one issue per branch, merged by the factory)
 labels: needs-triage
 ---
 
