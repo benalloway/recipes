@@ -1,0 +1,133 @@
+name: Sandcastle
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_iterations:
+        description: "Maximum plan -> execute -> merge cycles"
+        required: false
+        default: "5"
+        type: string
+      model:
+        description: "OpenCode model ID"
+        required: false
+        default: "opencode/muse-spark-1.3-contributor-free"
+        type: string
+      delivery:
+        description: "How to deliver merged commits"
+        required: false
+        default: "push"
+        type: choice
+        options:
+          - push
+          - pr
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: sandcastle-factory
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  sandcastle:
+    name: sandcastle (AFK factory)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issues' &&
+        (github.event.label.name == 'Sandcastle' || github.event.label.name == 'ready-for-agent') &&
+        contains(github.event.issue.labels.*.name, 'Sandcastle') &&
+        contains(github.event.issue.labels.*.name, 'ready-for-agent')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      GH_TOKEN: ${{ secrets.SANDCASTLE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+      SANDCASTLE_SANDBOX: local
+      SANDCASTLE_MODEL: ${{ inputs.model || 'opencode/muse-spark-1.3-contributor-free' }}
+      SANDCASTLE_MAX_ITERATIONS: ${{ inputs.max_iterations || '5' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.SANDCASTLE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install project dependencies and OpenCode CLI
+        run: |
+          npm ci
+          npm install -g opencode-ai@latest
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Record starting commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Run Sandcastle AFK factory
+        run: npm run sandcastle
+
+      - name: Verify and deliver commits
+        id: deliver
+        env:
+          DELIVERY: ${{ inputs.delivery || 'push' }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          NEW_COMMITS=$(git rev-list --count "${BASE_SHA}..HEAD")
+          echo "new_commits=${NEW_COMMITS}" >> "$GITHUB_OUTPUT"
+          if [ "${NEW_COMMITS}" -eq 0 ]; then
+            echo "No new commits produced by Sandcastle."
+            exit 0
+          fi
+
+          npm run check
+          npm run build
+
+          if [ "${DELIVERY}" = "pr" ]; then
+            BRANCH="sandcastle/run-${GITHUB_RUN_ID}"
+            git checkout -b "${BRANCH}"
+            git push -u origin "${BRANCH}"
+            gh pr create \
+              --base main \
+              --head "${BRANCH}" \
+              --title "chore(sandcastle): automated issue run #${GITHUB_RUN_NUMBER}" \
+              --body "Automated Sandcastle run (#${GITHUB_RUN_ID}) merged ${NEW_COMMITS} commit(s)."
+          else
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Deploy to production (when pushed to main)
+        if: >-
+          steps.deliver.outputs.new_commits != '0' &&
+          (inputs.delivery == '' || inputs.delivery == 'push') &&
+          secrets.CLOUDFLARE_API_TOKEN != ''
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler d1 migrations apply recipes-db --remote
+          npm run deploy
+
+      - name: Upload Sandcastle logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandcastle-logs-${{ github.run_id }}
+          path: .sandcastle/logs/
+          if-no-files-found: ignore
+          retention-days: 14

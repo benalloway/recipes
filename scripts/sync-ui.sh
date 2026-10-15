@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Vendor @benalloway/ui (pinned in scripts/ui-version.txt) into this repo.
-# Committed copies keep deploys hermetic and diffs reviewable.
+# Vendor @benalloway/ui into this repo (`src/components/ui/`, `src/styles/global.css`, `src/lib/formatDate.ts`).
+# Pass a commit SHA/tag or omit to sync from the current HEAD of `../ui` and update `scripts/ui-version.txt`.
 set -euo pipefail
 
-UI_SHA=$(cat scripts/ui-version.txt)
 UI_DIR="${UI_CHECKOUT:-../ui}"
 
 if [ ! -d "$UI_DIR/.git" ]; then
@@ -11,25 +10,19 @@ if [ ! -d "$UI_DIR/.git" ]; then
   exit 1
 fi
 
-git -C "$UI_DIR" fetch origin --tags >/dev/null 2>&1 || true
-git -C "$UI_DIR" checkout "$UI_SHA" --quiet
+if [ "${1:-}" != "" ]; then
+  UI_SHA="$1"
+  git -C "$UI_DIR" fetch origin --tags >/dev/null 2>&1 || true
+  git -C "$UI_DIR" checkout "$UI_SHA" --quiet
+else
+  UI_SHA=$(git -C "$UI_DIR" rev-parse HEAD)
+fi
+
+echo "$UI_SHA" > scripts/ui-version.txt
+mkdir -p src/components/ui src/styles src/lib
 
 cp "$UI_DIR/src/styles/oatmeal.css" src/styles/global.css
-cp "$UI_DIR"/src/components/Button.astro \
-   "$UI_DIR"/src/components/Badge.astro \
-   "$UI_DIR"/src/components/Container.astro \
-   "$UI_DIR"/src/components/EmptyState.astro \
-   "$UI_DIR"/src/components/Eyebrow.astro \
-   "$UI_DIR"/src/components/PageHeader.astro \
-   "$UI_DIR"/src/components/Section.astro \
-   "$UI_DIR"/src/components/Field.astro \
-   "$UI_DIR"/src/components/TextInput.astro \
-   "$UI_DIR"/src/components/TextareaInput.astro \
-   "$UI_DIR"/src/components/SelectInput.astro \
-   "$UI_DIR"/src/components/CheckboxItem.astro \
-   "$UI_DIR"/src/components/FileInput.astro \
-   "$UI_DIR"/src/components/FormAlert.astro \
-   "$UI_DIR"/src/components/SubmitBar.astro \
-   src/components/ui/
+cp "$UI_DIR"/src/components/*.astro src/components/ui/
+cp "$UI_DIR/src/lib/formatDate.ts" src/lib/formatDate.ts
 
-echo "vendored ui @ $UI_SHA"
+echo "vendored @benalloway/ui @ $UI_SHA"

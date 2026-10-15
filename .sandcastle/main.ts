@@ -1,34 +1,38 @@
 // Parallel Planner with Review — four-phase orchestration loop
 //
-// This template drives a multi-phase workflow:
-//   Phase 1 (Plan):             An opus agent analyzes open issues, builds a
+// Runs both:
+//   1. Locally WITHOUT Docker (default: `noSandbox()` + git worktrees per issue)
+//   2. In GitHub Actions (`.github/workflows/sandcastle.yml`, ephemeral runner VM + git worktrees)
+//   3. Optionally in Docker or Podman (`SANDCASTLE_SANDBOX=docker` or `podman`)
+//
+// Phases:
+//   Phase 0 (Pre-check):        Fast `gh issue list` check — exits immediately if no
+//                               open `Sandcastle`-labeled issues exist.
+//   Phase 1 (Plan):             The planning agent analyzes open issues, builds a
 //                               dependency graph, and outputs a <plan> JSON
 //                               listing unblocked issues with branch names.
-//   Phase 2 (Execute + Review): For each issue, a sandbox is created via
+//   Phase 2 (Execute + Review): For each issue, a git worktree sandbox is created via
 //                               createSandbox(). The implementer runs first
-//                               (100 iterations). If it produces commits, a
-//                               reviewer runs in the same sandbox on the same
+//                               (up to 100 iterations). If it produces commits, a
+//                               reviewer runs in the same worktree on the same
 //                               branch (1 iteration). All issue pipelines run
 //                               concurrently via Promise.allSettled().
 //   Phase 3 (Merge):            A single agent merges all completed branches
-//                               into the current branch.
-//
-// The outer loop repeats up to MAX_ITERATIONS times so that newly unblocked
-// issues are picked up after each round of merges.
+//                               into the current branch, verifies `check` + `build`,
+//                               and closes completed issues.
 //
 // Usage:
-//   npx tsx .sandcastle/main.ts
-// Or add to package.json:
-//   "scripts": { "sandcastle": "npx tsx .sandcastle/main.ts" }
+//   npm run sandcastle                  # local Docker-free (git worktrees)
+//   npm run sandcastle:gh               # trigger + watch on GitHub Actions
+//   SANDCASTLE_SANDBOX=docker npm run sandcastle
 
+import { execFileSync } from "node:child_process";
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
+import { podman } from "@ai-hero/sandcastle/sandboxes/podman";
 import { z } from "zod";
 
-// The planner emits its plan as JSON inside <plan> tags; Output.object extracts
-// and validates it against this schema. We use Zod here, but any Standard
-// Schema validator works just as well — Valibot, ArkType, etc. See
-// https://standardschema.dev.
 const planSchema = z.object({
   issues: z.array(
     z.object({ id: z.string(), title: z.string(), branch: z.string() }),
@@ -36,60 +40,158 @@ const planSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Configuration
+// Configuration (override via environment variables or .sandcastle/.env)
 // ---------------------------------------------------------------------------
 
-// Maximum number of plan→execute→merge cycles before stopping.
-// Raise this if your backlog is large; lower it for a quick smoke-test run.
-const MAX_ITERATIONS = 10;
+type SandboxMode = "local" | "no-sandbox" | "docker" | "podman";
 
-// Hooks run inside the sandbox before the agent starts each iteration.
-// npm install ensures the sandbox always has fresh dependencies.
-const hooks = {
-  sandbox: { onSandboxReady: [{ command: "npm install" }] },
+const SANDBOX_MODE = (
+  process.env.SANDCASTLE_SANDBOX?.toLowerCase() ?? "local"
+) as SandboxMode;
+
+const MODEL =
+  process.env.SANDCASTLE_MODEL || "opencode/muse-spark-1.3-contributor-free";
+
+const MAX_ITERATIONS = Number.parseInt(
+  process.env.SANDCASTLE_MAX_ITERATIONS || "10",
+  10,
+);
+
+function createSandboxProvider(): sandcastle.SandboxProvider {
+  const forwardedEnv: Record<string, string> = {};
+  if (process.env.OPENCODE_API_KEY) {
+    forwardedEnv.OPENCODE_API_KEY = process.env.OPENCODE_API_KEY;
+  }
+  if (process.env.GH_TOKEN) {
+    forwardedEnv.GH_TOKEN = process.env.GH_TOKEN;
+  } else if (process.env.GITHUB_TOKEN) {
+    forwardedEnv.GH_TOKEN = process.env.GITHUB_TOKEN;
+  }
+
+  switch (SANDBOX_MODE) {
+    case "docker":
+      return docker({ env: forwardedEnv });
+    case "podman":
+      return podman({ env: forwardedEnv });
+    case "local":
+    case "no-sandbox":
+    default:
+      return noSandbox({ env: forwardedEnv });
+  }
+}
+
+/**
+ * Wraps `sandcastle.opencode()` so that:
+ * 1. OpenCode v1.18+ receives `--auto` (its native non-interactive permission
+ *    auto-approval flag) instead of `--dangerously-skip-permissions`.
+ * 2. `OPENCODE_PERMISSION` is set to allow all tool calls in unattended runs.
+ */
+function createAgent(model = MODEL): sandcastle.AgentProvider {
+  const base = sandcastle.opencode(model, {
+    env: {
+      OPENCODE_PERMISSION: JSON.stringify({ "*": "allow" }),
+    },
+  });
+
+  return {
+    ...base,
+    buildPrintCommand(options) {
+      const cmd = base.buildPrintCommand(options);
+      return {
+        ...cmd,
+        command: cmd.command.replace(
+          "--dangerously-skip-permissions",
+          "--auto",
+        ),
+      };
+    },
+  };
+}
+
+/**
+ * Fast pre-check so we don't spin up an LLM call when the Sandcastle backlog is empty.
+ */
+function hasOpenSandcastleIssues(): boolean {
+  try {
+    const out = execFileSync(
+      "gh",
+      [
+        "issue",
+        "list",
+        "--state",
+        "open",
+        "--label",
+        "Sandcastle",
+        "--limit",
+        "1",
+        "--json",
+        "number",
+      ],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    ).trim();
+    const parsed = JSON.parse(out) as Array<{ number: number }>;
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch {
+    return true;
+  }
+}
+
+const isContainerSandbox =
+  SANDBOX_MODE === "docker" || SANDBOX_MODE === "podman";
+
+const worktreeHooks: sandcastle.SandboxHooks = {
+  sandbox: {
+    onSandboxReady: [
+      {
+        command: isContainerSandbox
+          ? "npm install --prefer-offline --no-audit --no-fund"
+          : "[ -d node_modules ] || npm install --prefer-offline --no-audit --no-fund",
+      },
+    ],
+  },
 };
 
-// Copy node_modules from the host into the worktree before each sandbox
-// starts. Avoids a full npm install from scratch; the hook above handles
-// platform-specific binaries and any packages added since the last copy.
+const headHooks: sandcastle.SandboxHooks = isContainerSandbox
+  ? worktreeHooks
+  : {};
+
 const copyToWorktree = ["node_modules"];
+
+console.log(
+  `Sandcastle starting (sandbox=${SANDBOX_MODE}, model=${MODEL}, maxIterations=${MAX_ITERATIONS})`,
+);
 
 // ---------------------------------------------------------------------------
 // Main loop
 // ---------------------------------------------------------------------------
 
 for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
+  if (!hasOpenSandcastleIssues()) {
+    console.log("No open issues labeled 'Sandcastle'. Exiting cleanly.");
+    break;
+  }
+
   console.log(`\n=== Iteration ${iteration}/${MAX_ITERATIONS} ===\n`);
 
   // -------------------------------------------------------------------------
   // Phase 1: Plan
-  //
-  // The planning agent (opus, for deeper reasoning) reads the open issue list,
-  // builds a dependency graph, and selects the issues that can be worked in
-  // parallel right now (i.e., no blocking dependencies on other open issues).
-  //
-  // It outputs a <plan> JSON block — Output.object parses and validates it.
   // -------------------------------------------------------------------------
   const plan = await sandcastle.run({
-    hooks,
-    sandbox: docker(),
+    hooks: headHooks,
+    sandbox: createSandboxProvider(),
     name: "planner",
-    // One iteration is enough: the planner just needs to read and reason,
-    // not write code. (Structured output requires maxIterations: 1.)
     maxIterations: 1,
-    // Opus for planning: dependency analysis benefits from deeper reasoning.
-    agent: sandcastle.opencode("opencode/muse-spark-1.3-contributor-free"),
+    agent: createAgent(),
     promptFile: "./.sandcastle/plan-prompt.md",
-    // Extract and validate the <plan> JSON into a typed object. Throws
-    // StructuredOutputError if the tag is missing, the JSON is malformed, or
-    // validation fails — which aborts the loop.
     output: sandcastle.Output.object({ tag: "plan", schema: planSchema }),
   });
 
   const issues = plan.output.issues;
 
   if (issues.length === 0) {
-    // No unblocked work — either everything is done or everything is blocked.
     console.log("No unblocked issues to work on. Exiting.");
     break;
   }
@@ -98,34 +200,26 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     `Planning complete. ${issues.length} issue(s) to work in parallel:`,
   );
   for (const issue of issues) {
-    console.log(`  ${issue.id}: ${issue.title} → ${issue.branch}`);
+    console.log(`  #${issue.id}: ${issue.title} → ${issue.branch}`);
   }
 
   // -------------------------------------------------------------------------
-  // Phase 2: Execute + Review
-  //
-  // For each issue, create a sandbox via createSandbox() so the implementer
-  // and reviewer share the same sandbox instance per branch. The implementer
-  // runs first; if it produces commits, the reviewer runs in the same sandbox.
-  //
-  // Promise.allSettled means one failing pipeline doesn't cancel the others.
+  // Phase 2: Execute + Review (isolated git worktree per issue)
   // -------------------------------------------------------------------------
-
   const settled = await Promise.allSettled(
     issues.map(async (issue) => {
       const sandbox = await sandcastle.createSandbox({
         branch: issue.branch,
-        sandbox: docker(),
-        hooks,
+        sandbox: createSandboxProvider(),
+        hooks: worktreeHooks,
         copyToWorktree,
       });
 
       try {
-        // Run the implementer
         const implement = await sandbox.run({
-          name: "implementer",
+          name: `implementer-${issue.id}`,
           maxIterations: 100,
-          agent: sandcastle.opencode("opencode/muse-spark-1.3-contributor-free"),
+          agent: createAgent(),
           promptFile: "./.sandcastle/implement-prompt.md",
           promptArgs: {
             TASK_ID: issue.id,
@@ -134,20 +228,17 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
           },
         });
 
-        // Only review if the implementer produced commits
         if (implement.commits.length > 0) {
           const review = await sandbox.run({
-            name: "reviewer",
+            name: `reviewer-${issue.id}`,
             maxIterations: 1,
-            agent: sandcastle.opencode("opencode/muse-spark-1.3-contributor-free"),
+            agent: createAgent(),
             promptFile: "./.sandcastle/review-prompt.md",
             promptArgs: {
               BRANCH: issue.branch,
             },
           });
 
-          // Merge commits from both runs so the merge phase sees all of them.
-          // Each sandbox.run() only returns commits from its own run.
           return {
             ...review,
             commits: [...implement.commits, ...review.commits],
@@ -161,17 +252,14 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     }),
   );
 
-  // Log any agents that threw (network error, sandbox crash, etc.).
   for (const [i, outcome] of settled.entries()) {
     if (outcome.status === "rejected") {
       console.error(
-        `  ✗ ${issues[i]!.id} (${issues[i]!.branch}) failed: ${outcome.reason}`,
+        `  ✗ #${issues[i]!.id} (${issues[i]!.branch}) failed: ${outcome.reason}`,
       );
     }
   }
 
-  // Only pass branches that actually produced commits to the merge phase.
-  // An agent that ran successfully but made no commits has nothing to merge.
   const completedIssues = settled
     .map((outcome, i) => ({ outcome, issue: issues[i]! }))
     .filter(
@@ -191,31 +279,22 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   }
 
   if (completedBranches.length === 0) {
-    // All agents ran but none made commits — nothing to merge this cycle.
-    console.log("No commits produced. Nothing to merge.");
-    continue;
+    console.log("No commits produced. Stopping loop.");
+    break;
   }
 
   // -------------------------------------------------------------------------
   // Phase 3: Merge
-  //
-  // One agent merges all completed branches into the current branch,
-  // resolving any conflicts and running tests to confirm everything works.
-  //
-  // The {{BRANCHES}} and {{ISSUES}} prompt arguments are lists that the agent
-  // uses to know which branches to merge and which issues to close.
   // -------------------------------------------------------------------------
   await sandcastle.run({
-    hooks,
-    sandbox: docker(),
+    hooks: headHooks,
+    sandbox: createSandboxProvider(),
     name: "merger",
     maxIterations: 1,
-    agent: sandcastle.opencode("opencode/muse-spark-1.3-contributor-free"),
+    agent: createAgent(),
     promptFile: "./.sandcastle/merge-prompt.md",
     promptArgs: {
-      // A markdown list of branch names, one per line.
       BRANCHES: completedBranches.map((b) => `- ${b}`).join("\n"),
-      // A markdown list of issue IDs and titles, one per line.
       ISSUES: completedIssues.map((i) => `- ${i.id}: ${i.title}`).join("\n"),
     },
   });

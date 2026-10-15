@@ -11,6 +11,21 @@ would ever need undoing.
 
 ---
 
+## Unreleased — Canonicalize bare `/recipes` → `/recipes/` (ADR-0004)
+
+Change: `src/middleware.ts` now 308-redirects bare `/recipes` to `/recipes/`
+(preserving query string) before reading the session cookie. Because `verify.ts`
+sets `Path=/recipes/` (`u('/')`), browsers omit the session cookie on bare
+`/recipes` per RFC 6265 §5.1.4; redirecting to `/recipes/` ensures both URLs
+resume the signed-in session identically.
+
+Verify: `npm run check` + `npm run build` green; `curl -sI https://benalloway.com/recipes`
+returns `308` `Location: /recipes/`; `https://benalloway.com/recipes/` returns `200`.
+
+Rollback: `npx wrangler rollback` (middleware redirect only; no schema change).
+
+---
+
 ## Unreleased — Oatmeal reskin + /recipes home (ADR-0003)
 
 Change: Reskinned to Oatmeal olive-instrument on `@benalloway/ui` v0.1.0

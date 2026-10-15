@@ -10,7 +10,12 @@
     "db:migrate:local": "wrangler d1 migrations apply recipes-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply recipes-db --remote",
     "check": "astro sync && tsc --noEmit",
+    "typecheck": "astro sync && tsc --noEmit",
+    "test": "astro build",
+    "ui:sync": "bash scripts/sync-ui.sh",
     "sandcastle": "npx tsx .sandcastle/main.ts",
+    "sandcastle:gh": "gh workflow run sandcastle.yml && sleep 2 && gh run watch",
+    "sandcastle:gh:pr": "gh workflow run sandcastle.yml -f delivery=pr && sleep 2 && gh run watch",
     "db:seed:local": "wrangler d1 execute recipes-db --local --file scripts/seed.sql",
     "db:seed:remote": "wrangler d1 execute recipes-db --remote --file scripts/seed.sql"
   },

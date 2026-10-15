@@ -10,12 +10,22 @@ const OPEN_PATHS = new Set(['/', '/login', '/api/health', '/favicon.ico', '/robo
 export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.session = undefined;
 
+  const { pathname, search } = context.url;
+
+  // Canonicalize bare `/recipes` → `/recipes/` (308) before reading the session:
+  // `verify.ts` sets the session cookie with `Path=/recipes/` (`u('/')`). Per
+  // RFC 6265 §5.1.4, browsers omit a `Path=/recipes/` cookie on bare `/recipes`
+  // requests, which otherwise makes `/recipes` look logged-out while `/recipes/`
+  // is logged-in.
+  if (BASE && pathname === BASE) {
+    return context.redirect(`${u('/')}${search}`, 308);
+  }
+
   const token = context.cookies.get(SESSION_COOKIE)?.value;
   if (token) {
     context.locals.session = await loadSessionByToken(getDb(context.locals), token);
   }
 
-  const { pathname } = context.url;
   const stripped =
     BASE && pathname.startsWith(BASE)
       ? pathname.slice(BASE.length) || '/'
