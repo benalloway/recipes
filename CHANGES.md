@@ -29,8 +29,9 @@ toolbar row (title + count badge + `+ New Recipe`).
 Verify: `npm run check` + `npm run build` green; `npm run preview`
 smoke — `/` 200 logged-out landing with login CTA, `/login` 200,
 `/favorites` + `/recipe/new` 302 when logged out, `/api/health` 200;
-sign-in flow sets a `Path=/` cookie; no `/recipes`-prefixed routes or
-redirects remain in app code.
+sign-in flow sets a `Path=/` cookie; no `/recipes`-prefixed app routes
+remain (only the intentional pre-rename `/recipes/*` → `/recipe/*`
+compat 308s in `src/middleware.ts`).
 
 Rollback: `npx wrangler rollback` (routing + shell only; no schema change).
 
