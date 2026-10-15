@@ -10,11 +10,12 @@ const { title } = Astro.props;
 const session = Astro.locals.session;
 const pathname = Astro.url.pathname;
 
-const navItems = [
-  { href: u('/'), label: 'Recipes' },
+const tabs = [
+  { href: u('/'), label: 'Shelf' },
   { href: u('/favorites'), label: 'Favorites' },
-  { href: u('/recipe/new'), label: 'New' },
 ];
+
+const menuItems = [...tabs, { href: u('/recipe/new'), label: '+ New Recipe' }];
 
 function isActive(href: string, currentPath: string) {
   if (href === u('/')) return currentPath === href;
@@ -57,32 +58,31 @@ function isActive(href: string, currentPath: string) {
     </script>
   </head>
   <body class="bg-olive-100 font-sans text-olive-950 dark:bg-olive-950 dark:text-white">
-    <header class="sticky top-0 z-10 bg-olive-100 dark:bg-olive-950">
+    <header class="sticky top-0 z-10 border-b border-olive-950/10 bg-olive-100 dark:border-white/10 dark:bg-olive-950">
       <nav aria-label="Primary">
-        <div class="mx-auto flex h-[var(--scroll-padding-top)] max-w-7xl items-center gap-4 px-6 lg:px-10">
-          <div class="flex flex-1 items-center">
-            <a
-              href={u('/')}
-              aria-label="Recipes — Home"
-              class="inline-flex min-h-12 items-center font-display text-xl tracking-tight whitespace-nowrap text-olive-950 transition hover:opacity-70 dark:text-white"
-            >
-              Recipes
-            </a>
-          </div>
+        <div class="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6 lg:px-10">
+          <a
+            href={u('/')}
+            aria-label="Recipes — Home"
+            class="inline-flex min-h-11 items-center gap-2 font-display text-lg tracking-tight whitespace-nowrap text-olive-950 transition hover:opacity-70 dark:text-white"
+          >
+            <span aria-hidden="true" class="inline-flex size-6 items-center justify-center rounded-full bg-olive-950 text-[13px] text-white dark:bg-olive-300 dark:text-olive-950">R</span>
+            Recipes
+          </a>
 
-          <div class="hidden flex-1 justify-center gap-8 lg:flex">
+          <div class="ml-2 hidden items-center gap-1 sm:flex" role="tablist" aria-label="App sections">
             {
-              navItems.map((item) => {
+              tabs.map((item) => {
                 const active = isActive(item.href, pathname);
                 return (
                   <a
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
                     class:list={[
-                      'inline-flex min-h-11 items-center text-sm/7 font-medium whitespace-nowrap transition',
+                      'inline-flex min-h-9 items-center rounded-full px-3 text-sm/6 font-medium whitespace-nowrap transition',
                       active
-                        ? 'text-olive-950 underline decoration-olive-500 decoration-2 underline-offset-8 dark:text-white dark:decoration-olive-300'
-                        : 'text-olive-950/70 hover:text-olive-950 dark:text-white/70 dark:hover:text-white',
+                        ? 'bg-olive-950 text-white dark:bg-olive-300 dark:text-olive-950'
+                        : 'text-olive-950/70 hover:bg-olive-950/5 hover:text-olive-950 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white',
                     ]}
                   >
                     {item.label}
@@ -92,22 +92,27 @@ function isActive(href: string, currentPath: string) {
             }
           </div>
 
-          <div class="flex flex-1 items-center justify-end gap-2">
-            <div class="hidden lg:block">
+          <div class="flex flex-1 items-center justify-end gap-1.5">
+            <a
+              href={u('/recipe/new')}
+              class="inline-flex min-h-9 items-center rounded-full bg-olive-950 px-3.5 py-1.5 text-sm/6 font-medium whitespace-nowrap text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+            >
+              <span aria-hidden="true" class="mr-1">+</span> New<span class="hidden md:inline">&nbsp;Recipe</span>
+            </a>
+
+            <div class="hidden sm:block">
               {
                 session ? (
-                  <form method="post" action={u('/auth/logout')} class="m-0">
-                    <button
-                      type="submit"
-                      class="inline-flex min-h-11 cursor-pointer items-center rounded-full px-3 py-1 text-sm/7 font-medium text-olive-950 transition hover:bg-olive-950/10 dark:text-white dark:hover:bg-white/10"
-                    >
-                      Log out
-                    </button>
-                  </form>
+                  <span
+                    title={session.email}
+                    class="inline-flex min-h-9 max-w-44 items-center truncate rounded-full bg-olive-950/6 px-3 text-sm/6 font-medium text-olive-950 dark:bg-white/8 dark:text-white"
+                  >
+                    {session.email}
+                  </span>
                 ) : (
                   <a
                     href={u('/login')}
-                    class="inline-flex min-h-11 items-center rounded-full bg-olive-950 px-4 py-2 text-sm/7 font-medium text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+                    class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-sm/6 font-medium whitespace-nowrap text-olive-950 transition hover:bg-olive-950/10 dark:text-white dark:hover:bg-white/10"
                   >
                     Sign in
                   </a>
@@ -119,10 +124,10 @@ function isActive(href: string, currentPath: string) {
               type="button"
               data-theme-toggle
               aria-label="Toggle color theme"
-              class="relative inline-flex size-11 items-center justify-center rounded-full text-olive-950 transition hover:bg-olive-950/10 active:scale-[0.98] dark:text-white dark:hover:bg-white/10"
+              class="relative inline-flex size-9 items-center justify-center rounded-full text-olive-950 transition hover:bg-olive-950/10 active:scale-[0.98] dark:text-white dark:hover:bg-white/10"
             >
               <span
-                class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-x-1/2 -translate-y-1/2 pointer-fine:hidden"
+                class="absolute top-1/2 left-1/2 size-[max(100%,2.75rem)] -translate-x-1/2 -translate-y-1/2 pointer-fine:hidden"
                 aria-hidden="true"></span>
               <svg
                 viewBox="0 0 24 24"
@@ -157,9 +162,9 @@ function isActive(href: string, currentPath: string) {
               aria-expanded="false"
               aria-controls="mobile-nav-dialog"
               aria-label="Open navigation menu"
-              class="relative inline-flex size-11 items-center justify-center rounded-full text-olive-950 transition hover:bg-olive-950/10 active:scale-[0.98] lg:hidden dark:text-white dark:hover:bg-white/10"
+              class="relative inline-flex size-9 items-center justify-center rounded-full text-olive-950 transition hover:bg-olive-950/10 active:scale-[0.98] sm:hidden dark:text-white dark:hover:bg-white/10"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-6">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-5">
                 <path
                   fill-rule="evenodd"
                   d="M3.748 8.248a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75ZM3.748 15.75a.75.75 0 0 1 .75-.751h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75Z"
@@ -201,7 +206,7 @@ function isActive(href: string, currentPath: string) {
             <nav aria-label="Mobile" class="mt-6">
               <div class="flex flex-col gap-2">
                 {
-                  navItems.map((item) => {
+                  menuItems.map((item) => {
                     const active = isActive(item.href, pathname);
                     return (
                       <a
@@ -230,14 +235,19 @@ function isActive(href: string, currentPath: string) {
                 <div class="mt-4 border-t border-olive-950/10 pt-6 dark:border-white/10">
                   {
                     session ? (
-                      <form method="post" action={u('/auth/logout')} class="m-0">
-                        <button
-                          type="submit"
-                          class="inline-flex min-h-12 cursor-pointer items-center text-3xl/10 font-medium text-olive-950/80 dark:text-white/80"
-                        >
-                          Log out
-                        </button>
-                      </form>
+                      <div class="flex flex-col gap-4">
+                        <span class="truncate text-xl font-medium text-olive-950/80 dark:text-white/80">
+                          {session.email}
+                        </span>
+                        <form method="post" action={u('/auth/logout')} class="m-0">
+                          <button
+                            type="submit"
+                            class="inline-flex min-h-12 cursor-pointer items-center text-3xl/10 font-medium text-olive-950/80 dark:text-white/80"
+                          >
+                            Log out
+                          </button>
+                        </form>
+                      </div>
                     ) : (
                       <a
                         href={u('/login')}
@@ -257,6 +267,17 @@ function isActive(href: string, currentPath: string) {
     <main class="isolate overflow-clip">
       <slot />
     </main>
+    <footer class="mt-16 border-t border-olive-950/10 dark:border-white/10">
+      <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 text-sm text-olive-950/60 sm:px-6 lg:px-10 dark:text-white/60">
+        <span>Recipes — your shelf</span>
+        <a
+          href="https://benalloway.com"
+          class="inline-flex min-h-11 items-center transition hover:text-olive-950 hover:opacity-70 dark:hover:text-white"
+        >
+          benalloway.com&nbsp;<span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </footer>
     <script src="../components/site-nav.ts"></script>
   </body>
 </html>

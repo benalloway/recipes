@@ -11,7 +11,7 @@ export const POST: APIRoute = async (context) => {
   }
   // Mirror the creation attributes so browsers reliably clear the cookie.
   context.cookies.delete(SESSION_COOKIE, {
-    path: u('/'),
+    path: '/',
     httpOnly: true,
     secure: context.url.protocol === 'https:',
     sameSite: 'lax',
