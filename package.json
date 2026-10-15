@@ -14,7 +14,10 @@
     "test": "astro build",
     "ui:sync": "bash scripts/sync-ui.sh",
     "db:seed:local": "wrangler d1 execute recipes-db --local --file scripts/seed.sql",
-    "db:seed:remote": "wrangler d1 execute recipes-db --remote --file scripts/seed.sql"
+    "db:seed:remote": "wrangler d1 execute recipes-db --remote --file scripts/seed.sql",
+    "forge": "npx tsx .forge/main.ts",
+    "forge:gh": "gh workflow run forge.yml && sleep 2 && gh run watch",
+    "forge:gh:pr": "gh workflow run forge.yml -f delivery=pr && sleep 2 && gh run watch"
   },
   "repository": {
     "type": "git",

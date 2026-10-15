@@ -7,3 +7,7 @@ dist/
 *.sqlite-journal
 .DS_Store
 .sandcastle/.env
+.forge/node_modules/
+.sandcastle/logs/
+.sandcastle/worktrees/
+.sandcastle/delivered-issues.txt

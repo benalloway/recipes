@@ -1,0 +1,44 @@
+name: Forge
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_iterations:
+        description: "Maximum plan -> execute -> merge cycles"
+        required: false
+        default: "5"
+        type: string
+      delivery:
+        description: "How to deliver merged commits"
+        required: false
+        default: "pr"
+        type: choice
+        options:
+          - push
+          - pr
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: forge-factory
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  forge:
+    # Forks: replace benalloway/forge with <owner>/forge (and set FORGE_REPO for the vendor script).
+    uses: benalloway/forge/.github/workflows/forge.yml@v1
+    with:
+      # label: Sandcastle        # uncomment while migrating from Sandcastle
+      # base_branch: master      # uncomment if your trunk is not `main`
+      # delivery: push           # uncomment ONLY for repos with green CI + branch protection (default pr)
+      # verify_command: "make verify"
+      # setup_command: "go mod download"
+    secrets:
+      opencode_api_key: ${{ secrets.OPENCODE_API_KEY }}
+      gh_token: ${{ secrets.FORGE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+      # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # only for direct-provider models
