@@ -8,6 +8,14 @@ import { SESSION_COOKIE, loadSessionByToken } from './lib/auth';
 // needs no base stripping.
 const OPEN_PATHS = new Set(['/', '/login', '/api/health', '/favicon.ico', '/robots.txt']);
 
+// Compat for pre-rename nested URLs (/recipes/*, from when resource routes
+// lived at plural /recipes/* before the singular /recipe/* rename): 308
+// preserves the method for any stale form posts. Runs before the auth gate
+// so old bookmarks canonicalize first.
+// Note: `/recipes/new` is covered by the pattern (`[^/]+` matches `new`).
+const LEGACY_RECIPE_PREFIX = '/recipes';
+const LEGACY_RECIPE_PATH = /^\/recipes\/[^/]+(\/(edit|favorite|delete))?$/;
+
 export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.session = undefined;
 
@@ -18,20 +26,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.session = await loadSessionByToken(getDb(context.locals), token);
   }
 
-  const stripped = pathname;
-
-  // Compat for pre-rename nested URLs (/recipes/*, from when resource
-  // routes lived at plural /recipes/* before the singular /recipe/*
-  // rename): 308 preserves the method for any stale form posts. Runs
-  // before the auth gate so old bookmarks canonicalize first.
-  if (stripped === '/recipes/new' || /^\/recipes\/[^/]+(\/(edit|favorite|delete))?$/.test(stripped)) {
-    return context.redirect(u(`/recipe${stripped.slice('/recipes'.length)}`), 308);
+  if (LEGACY_RECIPE_PATH.test(pathname)) {
+    return context.redirect(u(`/recipe${pathname.slice(LEGACY_RECIPE_PREFIX.length)}`), 308);
   }
-  const normalized = stripped.length > 1 ? stripped.replace(/\/+$/, '') : stripped;
+
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   const open =
     OPEN_PATHS.has(normalized) ||
-    stripped.startsWith('/auth/') ||
-    stripped.startsWith('/_astro/');
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/_astro/');
   if (!open && !context.locals.session) {
     return context.redirect(u('/login'), 302);
   }

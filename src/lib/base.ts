@@ -12,6 +12,7 @@ export const BASE = '';
 
 /**
  * @param {string} path app-absolute path starting with `/`
+ * @returns {string} the same path while served from subdomain root
  */
 export function u(path) {
   return `${BASE}${path}`;

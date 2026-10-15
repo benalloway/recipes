@@ -12,6 +12,7 @@ const session = Astro.locals.session;
 const cards = session ? await getDashboard(getDb(Astro.locals), session.userId) : [];
 const hasCards = cards.length > 0;
 const showEmptyShelf = !!session && !hasCards;
+const recipeCountText = `${cards.length} ${cards.length === 1 ? 'recipe' : 'recipes'}`;
 ---
 
 <Base title="Home">
@@ -23,16 +24,15 @@ const showEmptyShelf = !!session && !hasCards;
       {
         session && (
           <Badge color="soft">
-            {cards.length} {cards.length === 1 ? 'recipe' : 'recipes'}
+            {recipeCountText}
           </Badge>
         )
       }
-      <span class="flex-1" aria-hidden="true"></span>
       {
         session && (
           <a
             href={u('/recipe/new')}
-            class="inline-flex min-h-9 items-center rounded-full bg-olive-950 px-3.5 py-1.5 text-sm/6 font-medium whitespace-nowrap text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
+            class="ml-auto inline-flex min-h-9 items-center rounded-full bg-olive-950 px-3.5 py-1.5 text-sm/6 font-medium whitespace-nowrap text-white transition hover:bg-olive-800 dark:bg-olive-300 dark:text-olive-950 dark:hover:bg-olive-200"
           >
             <span aria-hidden="true" class="mr-1">+</span> New Recipe
           </a>

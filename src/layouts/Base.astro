@@ -10,16 +10,16 @@ const { title } = Astro.props;
 const session = Astro.locals.session;
 const pathname = Astro.url.pathname;
 
-const tabs = [
+const sectionTabs = [
   { href: u('/'), label: 'Shelf' },
   { href: u('/favorites'), label: 'Favorites' },
 ];
 
-const menuItems = [...tabs, { href: u('/recipe/new'), label: '+ New Recipe' }];
+const mobileMenuItems = [...sectionTabs, { href: u('/recipe/new'), label: '+ New Recipe' }];
 
-function isActive(href: string, currentPath: string) {
-  if (href === u('/')) return currentPath === href;
-  return currentPath === href || currentPath.startsWith(`${href}/`);
+function isActive(href: string) {
+  if (href === u('/')) return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 ---
 
@@ -70,10 +70,10 @@ function isActive(href: string, currentPath: string) {
             Recipes
           </a>
 
-          <div class="ml-2 hidden items-center gap-1 sm:flex" role="tablist" aria-label="App sections">
+          <div class="ml-2 hidden items-center gap-1 sm:flex" aria-label="App sections">
             {
-              tabs.map((item) => {
-                const active = isActive(item.href, pathname);
+              sectionTabs.map((item) => {
+                const active = isActive(item.href);
                 return (
                   <a
                     href={item.href}
@@ -206,8 +206,8 @@ function isActive(href: string, currentPath: string) {
             <nav aria-label="Mobile" class="mt-6">
               <div class="flex flex-col gap-2">
                 {
-                  menuItems.map((item) => {
-                    const active = isActive(item.href, pathname);
+                  mobileMenuItems.map((item) => {
+                    const active = isActive(item.href);
                     return (
                       <a
                         href={item.href}
