@@ -1,13 +1,16 @@
 # Workflows
 
-Two GitHub workflows: `CI` (`ci.yml`) and `Forge` (`forge.yml`, a thin
-wrapper over the reusable `benalloway/forge` factory pinned at `v1`).
+Three GitHub workflows: `CI` (`ci.yml`), `Forge` (`forge.yml`, a thin
+wrapper over the reusable `benalloway/forge` factory pinned at `v1`), and
+`Review` (`review.yml`, a thin wrapper over the reusable
+`benalloway/forge` PR review pinned at `v1`).
 Agents run locally (`npm run forge`) or in Actions via `forge.yml`.
 
 | Workflow | Trigger | Does | Guards |
 |---|---|---|---|
 | `CI` (`ci.yml`) | push to `main`, PRs, manual | `check` + `build`; on `main`: D1 migrations → deploy | Required strict-green `build` on `main` (branch protection) |
 | `Forge` (`forge.yml`) | issue labeled `Forge` + `ready-for-agent` (skips `run:home`), or manual (`npm run forge:gh`) | Runs the vendored `.forge/` factory (planner → implementers → reviewers → merger), verifies `check` + `build`, delivers (PR by default) | `concurrency: forge-factory`, `check` + `build` gate before delivery |
+| `Review` (`review.yml`) | PR opened / synchronized | Read-only review agent (standards + vendored prompt), posts one advisory comment, never pushes | Per-PR concurrency (latest push wins), no blocking gate |
 
 Agent pipeline (vendored from `benalloway/forge@v1`,
 `parallel-planner-with-review`): planner reads open `Forge`-labeled
