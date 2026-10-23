@@ -30,6 +30,10 @@ permissions:
 
 jobs:
   forge:
+    # Routing: the home-server runner owns `run:home` tickets — cloud skips
+    # them. `run:cloud` (or neither label) runs here. workflow_dispatch has
+    # no issue payload, so manual triggers always run.
+    if: ${{ github.event_name != 'issues' || !contains(github.event.issue.labels.*.name, 'run:home') }}
     # Forks: replace benalloway/forge with <owner>/forge (and set FORGE_REPO for the vendor script).
     uses: benalloway/forge/.github/workflows/forge.yml@v1
     with:

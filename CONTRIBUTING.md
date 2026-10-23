@@ -30,6 +30,13 @@ npm run forge       # local run, from the branch to merge into
 npm run forge:gh    # or trigger on GitHub Actions (PR delivery by default)
 ```
 
+**Where does it run?** Triage sets routing alongside `ready-for-agent`
+(see `docs/agents/triage-labels.md`): no routing label (or `run:cloud`) runs
+on cloud Actions automatically; add `run:home` and the home server
+(`thinkcentre-m73`) picks it up instead while cloud skips it. From your
+phone: create the issue from the Agent-task template, grill it, triage to
+`ready-for-agent`, and add `run:home` only if you want the home server.
+
 Up to `FORGE_MAX_ITERATIONS` plan → execute → merge cycles. The planner picks
 unblocked `Forge` issues, implementers build each on `forge/issue-{id}`,
 reviewers refine per `.sandcastle/CODING_STANDARDS.md`, the merger merges
