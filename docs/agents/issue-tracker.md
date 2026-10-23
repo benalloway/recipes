@@ -29,6 +29,13 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 Create a GitHub issue.
 
+## Routing queries
+
+- **Cloud queue** (default): `gh issue list --label Forge,ready-for-agent` minus anything labelled `run:home`.
+- **Home-server queue**: `gh issue list --label Forge,ready-for-agent,run:home`.
+- **Route a ticket home**: `gh issue edit <n> --add-label run:home`. **Route to cloud**: `gh issue edit <n> --remove-label run:home` (optionally `--add-label run:cloud` to be explicit).
+- **Claim (first write)**: whoever picks a ticket up comments (`gh issue comment <n> --body "Claimed by <cloud|home-server>"`) so the other side can see it in `--comments` before starting.
+
 ## When a skill says "fetch the relevant ticket"
 
 Run `gh issue view <number> --comments`.

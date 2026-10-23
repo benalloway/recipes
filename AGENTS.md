@@ -89,11 +89,17 @@ and re-vendor.
 0. **Backlog:** issues carrying the `Forge` label are the planner's input.
    Triage (`/triage`) moves specs through `needs-triage` → `needs-info` /
    `ready-for-agent` / `ready-for-human` / `wontfix` with `bug`/`enhancement`.
-   Only `ready-for-agent` + `Forge` issues get planned.
+   Only `ready-for-agent` + `Forge` issues get planned. Triage also sets
+   routing (`docs/agents/triage-labels.md`): no routing label (or
+   `run:cloud`) runs on cloud Actions; `run:home` runs on the home server
+   (`thinkcentre-m73`) and is skipped by cloud. A local `npm run forge`
+   plans whatever is unblocked in the backlog label regardless of routing —
+   coordinate via the issue comments before running it against a shared repo.
 1. **Run locally:** `npm run forge` from the branch you want merged into
    (usually `main`). Uses host `opencode` + `gh` auth and creates an
    isolated git worktree per issue.
-2. **Run on GitHub Actions:** label an issue `Forge` + `ready-for-agent`, or
+2. **Run on GitHub Actions:** label an issue `Forge` + `ready-for-agent` (no
+   `run:home` label), or
    run `npm run forge:gh` / `npm run forge:gh:pr`. Needs `OPENCODE_API_KEY`
    (+ `FORGE_GH_TOKEN` for reliable PR delivery) as repo Actions secrets.
 3. **What happens:** up to `FORGE_MAX_ITERATIONS` plan → execute → merge

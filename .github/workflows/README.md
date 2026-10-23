@@ -7,7 +7,7 @@ Agents run locally (`npm run forge`) or in Actions via `forge.yml`.
 | Workflow | Trigger | Does | Guards |
 |---|---|---|---|
 | `CI` (`ci.yml`) | push to `main`, PRs, manual | `check` + `build`; on `main`: D1 migrations → deploy | Required strict-green `build` on `main` (branch protection) |
-| `Forge` (`forge.yml`) | issue labeled `Forge` + `ready-for-agent`, or manual (`npm run forge:gh`) | Runs the vendored `.forge/` factory (planner → implementers → reviewers → merger), verifies `check` + `build`, delivers (PR by default) | `concurrency: forge-factory`, `check` + `build` gate before delivery |
+| `Forge` (`forge.yml`) | issue labeled `Forge` + `ready-for-agent` (skips `run:home`), or manual (`npm run forge:gh`) | Runs the vendored `.forge/` factory (planner → implementers → reviewers → merger), verifies `check` + `build`, delivers (PR by default) | `concurrency: forge-factory`, `check` + `build` gate before delivery |
 
 Agent pipeline (vendored from `benalloway/forge@v1`,
 `parallel-planner-with-review`): planner reads open `Forge`-labeled
@@ -15,6 +15,17 @@ issues → implementers work each unblocked issue on `forge/issue-{id}`
 in git-worktree sandboxes → reviewer refines each branch → merger merges
 completed branches, delivers, and closes their issues. See `.forge/` (never
 hand-edit) and `docs/agents/` for the tracker and label vocabulary.
+
+## Routing: cloud vs home server
+
+Triage (`ready-for-agent`) decides *whether* a ticket runs; routing labels
+decide *where* (see `docs/agents/triage-labels.md`):
+
+- No routing label (or `run:cloud`) → cloud `forge.yml` picks it up.
+- `run:home` → cloud skips it (job `if:` guard); the home-server runner
+  (`thinkcentre-m73`) polls `Forge` + `ready-for-agent` + `run:home`.
+- Whichever side starts first comments `Claimed by <cloud|home-server>` so
+  the other side sees it before starting.
 
 ## Required GitHub Secrets for `forge.yml`
 

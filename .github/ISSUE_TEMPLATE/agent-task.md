@@ -17,3 +17,6 @@ labels: needs-triage
 - None (can start immediately).
 
 <!-- or: - #N (why this gates) per open dependency -->
+
+<!-- Routing: triage adds Forge + ready-for-agent (runs on cloud by default).
+     Add the run:home label instead to route this ticket to the home server. -->
