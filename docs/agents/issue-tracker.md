@@ -31,8 +31,8 @@ Create a GitHub issue.
 
 ## Routing queries
 
-- **Cloud queue** (default): `gh issue list --label Forge,ready-for-agent` minus anything labelled `run:home`.
-- **Home-server queue**: `gh issue list --label Forge,ready-for-agent,run:home`.
+- **Cloud queue** (default): `gh issue list --state open --search "label:Forge label:ready-for-agent -label:run:home"` (`--label` is AND-only, so exclusion needs `--search`).
+- **Home-server queue**: `gh issue list --state open --label Forge,ready-for-agent,run:home`.
 - **Route a ticket home**: `gh issue edit <n> --add-label run:home`. **Route to cloud**: `gh issue edit <n> --remove-label run:home` (optionally `--add-label run:cloud` to be explicit).
 - **Claim (first write)**: whoever picks a ticket up comments (`gh issue comment <n> --body "Claimed by <cloud|home-server>"`) so the other side can see it in `--comments` before starting.
 
